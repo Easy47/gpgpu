@@ -262,7 +262,7 @@ std::vector<Point> compute_mask(gray8_image *harris_resp, gray8_image *t2, float
     float min = t2->min();
     for (int i = 0; i < harris_resp->sx; i++) {
         for (int j = 0; j < harris_resp->sy; j++) {
-            if ((abs(harris_resp->pixels[i * harris_resp->sy + j] - t2->pixels[i * harris_resp->sy + j] <= atol * rtol * abs(t2->pixels[i * harris_resp->sy + j]))) 
+            if ((abs(harris_resp->pixels[i * harris_resp->sy + j] - t2->pixels[i * harris_resp->sy + j]) <= atol * rtol * abs(t2->pixels[i * harris_resp->sy + j])) 
             && (harris_resp->pixels[i * harris_resp->sy + j] > min + threshold * (max - min))) {
                 //mask->pixels[i * harris_resp->sy + j] = 1;
                 Point tmp = Point(i , j, harris_resp->pixels[i * harris_resp->sy + j]);
@@ -275,7 +275,7 @@ std::vector<Point> compute_mask(gray8_image *harris_resp, gray8_image *t2, float
     return res;
 }
 
-bool myfunction (Point p1,Point p2) { return !( p1.val < p2.val); }
+bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
 
 
 void detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
@@ -313,9 +313,11 @@ void detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int m
     for (int i = 0; i < 625; i++) {
         ellipse_kernel->pixels[i] = tmp[i];
     }
+    std::cout << harris_resp->max() << "\n";
     gray8_image *dilate = harris_resp->dilate(ellipse_kernel);
     std::cout << "dilate : " << "\n";
-    std::cout << dilate->pixels[200 * dilate->sy + 300] << "\n";
+    std::cout << dilate->pixels[89 * dilate->sy + 250] << "\n";
+    std::cout << dilate->max() << "\n";
     //gray8_image *mask = new gray8_image(image_gray->sx, image_gray->sy);
     std::vector<Point> candidate = compute_mask(dilate, harris_resp, threshold);
     std::sort(candidate.begin(), candidate.end(), myfunction);
@@ -334,7 +336,7 @@ void detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int m
     }
 
     for (auto i = res.begin(); i != res.end(); i++) {
-        //std::cout << (*i).x << " " << (*i).y << " " << (*i).val <<  "\n";
+        std::cout << (*i).x << " " << (*i).y << " " << (*i).val <<  "\n";
     }
 
 

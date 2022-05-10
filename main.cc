@@ -4,7 +4,7 @@
 #include <png.h>
 #include <cstddef>
 #include <algorithm>
-
+#include <vector>
 int width, height;
 png_byte color_type;
 png_byte bit_depth;
@@ -242,7 +242,102 @@ gray8_image *compute_harris_response(gray8_image *img) {
     return res;
 
 }
-void detect_harris_points() {
+class Point {
+    public:
+    int x;
+    int y;
+    float val;
+    Point(int x, int y, float val) {
+        this->x = x;
+        this->y = y;
+        this->val = val;
+    }
+};
+
+std::vector<Point> compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
+    std::vector<Point> res;
+    float rtol = 0.0001;
+    float atol = 0.0000001;
+    float max = t2->max();
+    float min = t2->min();
+    for (int i = 0; i < harris_resp->sx; i++) {
+        for (int j = 0; j < harris_resp->sy; j++) {
+            if ((abs(harris_resp->pixels[i * harris_resp->sy + j] - t2->pixels[i * harris_resp->sy + j] <= atol * rtol * abs(t2->pixels[i * harris_resp->sy + j]))) 
+            && (harris_resp->pixels[i * harris_resp->sy + j] > min + threshold * (max - min))) {
+                //mask->pixels[i * harris_resp->sy + j] = 1;
+                Point tmp = Point(i , j, harris_resp->pixels[i * harris_resp->sy + j]);
+                res.push_back(tmp);
+            }/* else {
+                mask->pixels[i * harris_resp->sy + j] = 0;
+            }*/
+        }
+    }
+    return res;
+}
+
+bool myfunction (Point p1,Point p2) { return !( p1.val < p2.val); }
+
+
+void detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
+    gray8_image *harris_resp = compute_harris_response(image_gray);
+    float tmp[625] = { 
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+                    0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+                    0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+                    0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+                    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+                    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+                    0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+                    0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+                    0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0,
+                    0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0,
+                    0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+                };
+    std::cout << "HARRIS RESP : " << "\n";
+    std::cout << harris_resp->pixels[200 * harris_resp->sy + 300] << "\n";
+    gray8_image *ellipse_kernel = new gray8_image(25,25);
+    for (int i = 0; i < 625; i++) {
+        ellipse_kernel->pixels[i] = tmp[i];
+    }
+    gray8_image *dilate = harris_resp->dilate(ellipse_kernel);
+    std::cout << "dilate : " << "\n";
+    std::cout << dilate->pixels[200 * dilate->sy + 300] << "\n";
+    //gray8_image *mask = new gray8_image(image_gray->sx, image_gray->sy);
+    std::vector<Point> candidate = compute_mask(dilate, harris_resp, threshold);
+    std::sort(candidate.begin(), candidate.end(), myfunction);
+    std::cout << candidate[0].x  << " " << candidate[0].y << " " << candidate[0].val << "\n";
+    std::cout <<  candidate[1].x  << " " << candidate[1].y  << " " << candidate[1].val <<  "\n";
+    std::cout <<  candidate[35].x  << " " << candidate[35].y  << " " << candidate[35].val <<  "\n";
+    std::cout << candidate.size() << "\n";
+    std::vector<Point> res;
+    int nb = 0;
+    for (auto i = candidate.begin(); i != candidate.end(); i++) {
+        if (nb == max_keypoints) {
+            break;
+        }
+        nb++;
+        res.push_back(*i);
+    }
+
+    for (auto i = res.begin(); i != res.end(); i++) {
+        //std::cout << (*i).x << " " << (*i).y << " " << (*i).val <<  "\n";
+    }
+
+
     
 }
 int main(int argc, char *argv[]) {
@@ -284,14 +379,14 @@ int main(int argc, char *argv[]) {
     std::cout << "image loaded\n";
     gray8_image *test = new gray8_image(height, width, row_pointers);
     std::cout << "grayscale image\n";
-    gray8_image *res = compute_harris_response(test);
+    /*gray8_image *res = compute_harris_response(test);
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
-            //std::cout.precision(17);
-             //std::cout << res->pixels[i * width + j] << " ";
+            std::cout.precision(17);
+            std::cout << res->pixels[i * width + j] << " ";
         }
-    }
-    std::cout << res->pixels[200*width + 19] << "\n";
+    }*/
+    detect_harris_points(test, 30, 25, 0.1);
     /*for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             png_bytep pixel = &(row_pointers[i][j * 4]);

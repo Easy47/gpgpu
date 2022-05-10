@@ -150,3 +150,59 @@ gray8_image *gray8_image::gray_convolution(gray8_image* masque) {
     }
     return res_img;
 }
+
+
+gray8_image *gray8_image::dilate(gray8_image* masque) {
+    int index = (masque->sx - 1) / 2;
+    gray8_image *res_img = new gray8_image(this->sx, this->sy);
+    for (int x = 0; x < this->sx; x++) {
+        for (int y = 0; y < this->sy; y++) {
+            double max = this->pixels[x * this->sy + y];
+            for (int i = -index; i <= index; i++) {
+                if (i + x < 0 || i + x >= this->sx) {
+                    continue;
+                }
+                for (int j = -index; j <= index; j++) {
+                    if (j + y < 0 || j + y >= this->sy) {
+                        continue;
+                    }
+
+                    double m = masque->pixels[(i + index) * masque->sy + (j + index)];
+                    if (m == 0) {
+                        continue;
+                    }
+                    double n = this->pixels[(x + i) * this->sy + (y + j)];
+                    if (n > max) {
+                        max = n;
+                    }
+                }
+            }
+            res_img->pixels[x * this->sy + y] = max;
+        }
+    }
+    return res_img;
+}
+
+float gray8_image::max() {
+    float res = this->pixels[0];
+    for (int i = 0; i < this->sx; i++) {
+        for (int j = 0; j < this->sy; j++) {
+            if (this->pixels[i * this->sy + j] > res) {
+                res = this->pixels[i * this->sy + j];
+            }
+        }
+    }
+    return res;
+}
+
+float gray8_image::min() {
+    float res = this->pixels[0];
+    for (int i = 0; i < this->sx; i++) {
+        for (int j = 0; j < this->sy; j++) {
+            if (this->pixels[i * this->sy + j] < res) {
+                res = this->pixels[i * this->sy + j];
+            }
+        }
+    }
+    return res;
+}

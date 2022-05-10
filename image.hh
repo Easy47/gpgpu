@@ -30,6 +30,9 @@ class gray8_image {
 
             gray8_image *gray_convolution(int* masque);
             gray8_image *gray_convolution(gray8_image* masque);
+            gray8_image *dilate(gray8_image* masque);
+            float min();
+            float max();
 
   public:
             /**Width of the image in pixels.*/

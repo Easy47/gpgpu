@@ -29,7 +29,7 @@ class gray8_image {
             double*& get_buffer();
 
             gray8_image *gray_convolution(int* masque);
-            gray8_image *gray_convolution(gray8_image* masque);
+            gray8_image *gray_convolution(gray8_image* masque, gray8_image *res_img);
             gray8_image *dilate(gray8_image* masque);
             float min();
             float max();
@@ -45,7 +45,7 @@ class gray8_image {
             double* pixels;
     };
     gray8_image *img_mult(gray8_image *img, gray8_image *img2);
-    gray8_image *img_add(gray8_image *img, gray8_image *img2);
+    gray8_image *img_add(gray8_image *img, gray8_image *img2, gray8_image *res);
     gray8_image *img_sous(gray8_image *img, gray8_image *img2);
     gray8_image *img_mult_scalar(gray8_image *img, int val);
     gray8_image *img_div(gray8_image *img, gray8_image *img2);

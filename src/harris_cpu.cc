@@ -51,6 +51,8 @@ void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image 
             gy->pixels[i * size1 + j]= -1 * y->pixels[i * size2 + j] * std::exp(-1 * ((x->pixels[i * size1 + j] * x->pixels[i * size1 + j] / val1) + (y->pixels[i * size1 + j] * y->pixels[i * size1 + j] / val1)));
         }
     }
+    delete y;
+    delete x;
 }
 void gauss_kernel(int size, int sizey, gray8_image *res) {
 
@@ -90,6 +92,8 @@ void gauss_kernel(int size, int sizey, gray8_image *res) {
         }
         //std::cout << "\n";
     }
+    delete y;
+    delete x;
 }
 
 void gauss_derivatives(gray8_image *img, int size, gray8_image *imx, gray8_image *imy) {
@@ -97,11 +101,14 @@ void gauss_derivatives(gray8_image *img, int size, gray8_image *imx, gray8_image
     gray8_image *gx = new gray8_image(2*size + 1, 2*size + 1);
     gray8_image *gy = new gray8_image(2*size + 1, 2*size + 1);
     gauss_derivative_kernels(size, size, gx, gy);
-    //std::cout << gx->pixels[5 * gx->sy + 5] << "\n";
-    //std::cout << img->pixels[100 * img->sy + 250] << "\n";
-    imx->pixels = img->gray_convolution(gx)->pixels;
-    //std::cout << imx->pixels[200 * imx->sy + 20] << "\n";
-    imy->pixels = img->gray_convolution(gy)->pixels;
+
+    
+    img->gray_convolution(gx, imx);
+    img->gray_convolution(gy, imy);
+
+
+    delete gx;
+    delete gy;
 }
 
 gray8_image *compute_harris_response(gray8_image *img) {
@@ -114,20 +121,52 @@ gray8_image *compute_harris_response(gray8_image *img) {
     gray8_image *gauss = new gray8_image(2*OPENING_SIZE + 1, 2*OPENING_SIZE + 1);
     gauss_kernel(OPENING_SIZE, OPENING_SIZE, gauss);
 
+    
+
     gray8_image *imx2 = img_mult(imx, imx);
 
-    auto Wxx = imx2->gray_convolution(gauss);
+    gray8_image *Wxx = new gray8_image(imx2->sx, imx2->sy);
+    imx2->gray_convolution(gauss, Wxx);
+
     gray8_image *imximy = img_mult(imx, imy);   
-    auto Wxy = imximy->gray_convolution(gauss);
+
+    auto Wxy = new gray8_image(imximy->sx, imximy->sy);
+    imximy->gray_convolution(gauss, Wxy);
+
     gray8_image *imy2 = img_mult(imy, imy);
 
-    auto Wyy = imy2->gray_convolution(gauss);
+    auto Wyy = new gray8_image(imy2->sx, imy2->sy);
+    imy2->gray_convolution(gauss, Wyy);
 
-    auto Wdet = img_sous(img_mult(Wxx, Wyy),img_mult(Wxy, Wxy));
+    auto s1 = img_mult(Wxx, Wyy);
+    auto s2 = img_mult(Wxy, Wxy);
+    auto Wdet = img_sous(s1, s2);
+    delete s1;
+    delete s2;
 
-    auto Wtr = img_add(Wxx, Wyy);
+    auto Wtr = new gray8_image(Wxx->sx, Wxx->sy);
+    img_add(Wxx, Wyy, Wtr);
+
     gray8_image *tmp = img_add_scalar(Wtr, 1);
     gray8_image *res = img_div(Wdet, tmp);
+
+    delete imx;
+    delete imy;
+    delete gauss;
+    delete imx2;
+    delete imximy;
+    delete imy2;
+    delete tmp;
+
+
+
+    delete Wxx;
+    delete Wxy;
+    delete Wyy;
+
+    delete Wtr;
+    delete Wdet;
+
     return res;
 
 }
@@ -216,6 +255,9 @@ bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
         nb++;
         res.push_back(*i);
     }
+    delete harris_resp;
+    delete ellipse_kernel;
+    delete dilate;
     return res;
     
 }
@@ -234,4 +276,5 @@ void detect_point(PNG_data image_data) {
     for (auto i = res.begin(); i != res.end(); i++) {
         std::cout << (*i).x << " " << (*i).y << std::endl;
     }
+    delete test;
 }

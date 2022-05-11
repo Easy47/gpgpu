@@ -7,9 +7,9 @@ void BM_Rendering_cpu(benchmark::State& st)
 {
   //int stride = width * kRGBASize;
   //std::vector<char> data(height * stride);
-  char *filename = ""
+  char filename[] = "img/b001.png";
   for (auto _ : st)
-    detect_harris_points(filename);
+    detect_point(filename);
 
   //st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
 }

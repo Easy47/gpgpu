@@ -3,8 +3,8 @@
 
 #include <png.h>
 
-#include <CLI/CLI.hpp>
-#include <spdlog/spdlog.h>
+//#include <CLI/CLI.hpp>
+//#include <spdlog/spdlog.h>
 #include "harris_cpu.hpp"
 
 
@@ -14,21 +14,21 @@ int main(int argc, char** argv)
   (void) argc;
   (void) argv;
 
-  std::string filename = "";
-  std::string mode = "GPU";
-
+  char filename[] = "../img/b001.png";
+  char mode[] = "CPU";
+/*
 
   CLI::App app{"harris"};
 
   app.add_option("-o", filename, "Input image");
   app.add_set("-m", mode, {"GPU", "CPU"}, "Either 'GPU' or 'CPU'");
 
-  CLI11_PARSE(app, argc, argv);
+  CLI11_PARSE(app, argc, argv);*/
 
 
-  if (mode == "CPU") {
-    detect_point(filename);
-  }
+  //if (mode == "CPU") {
+  detect_point(filename);
+  //}
   /*else if (mode == "GPU")
   {
     render(reinterpret_cast<char*>(buffer.get()), width, height, stride, niter);

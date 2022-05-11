@@ -1,4 +1,4 @@
-
+#pragma once
 //TIFO
 #include <png.h>
 

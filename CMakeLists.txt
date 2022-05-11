@@ -31,10 +31,9 @@ FetchContent_MakeAvailable(spdlog)
 FetchContent_MakeAvailable(CLI11)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR} )
-find_package(PNG REQUIRED)
+
 # find_package(CUDA REQUIRED)
 find_package(TBB REQUIRED)
-
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
@@ -46,12 +45,12 @@ target_link_libraries(renderer PRIVATE spdlog::spdlog)
 
 
 if (NOT PROF)
-  target_sources(renderer PRIVATE src/harris_cpu.hpp src/image.cc)
+  target_sources(renderer PRIVATE src/harris_cpu.hpp src/image.cc src/harris_cpu.cc)
   set_target_properties(renderer PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
-  add_library(render_cpu_ref SHARED IMPORTED)
-  target_link_libraries(render_cpu_ref INTERFACE tbb)
-  set_target_properties(render_cpu_ref PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/librender_cpu_ref.so)
+  # add_library(render_cpu_ref SHARED IMPORTED)
+  # target_link_libraries(render_cpu_ref INTERFACE tbb)
+  # set_target_properties(render_cpu_ref PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/librender_cpu_ref.so)
 else()
   target_sources(renderer PRIVATE src/harris_cpu.hpp src/render_prof.cu)
   set_target_properties(renderer PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -69,16 +68,15 @@ else()
   #target_compile_options(render_cpu_ref PRIVATE "-mavx")
 endif()
 
+find_package(PNG REQUIRED)
+include_directories(${PNG_INCLUDE_DIR})
 
-
-
-add_executable(harris src/mandel.cpp)
+add_executable(harris src/mandel.cpp src/harris_cpu.hpp src/harris_cpu.cc src/image.hh src/image.cc)
 target_compile_features(harris PUBLIC cxx_std_17)
-target_link_libraries(harris PRIVATE render_cpu_ref PNG::PNG CLI11::CLI11 spdlog::spdlog renderer)
+target_link_libraries(harris PRIVATE ${PNG_LIBRARY} CLI11::CLI11 spdlog::spdlog)# renderer)
 
-add_executable(bench src/bench.cpp)
+add_executable(bench src/bench.cpp src/harris_cpu.hpp src/harris_cpu.cc src/image.hh src/image.cc)
 target_compile_features(bench PUBLIC cxx_std_17)
-target_link_libraries(bench PRIVATE render_cpu_ref spdlog::spdlog benchmark renderer)
-
+target_link_libraries(bench PRIVATE ${PNG_LIBRARY} spdlog::spdlog benchmark)# renderer)
 
 

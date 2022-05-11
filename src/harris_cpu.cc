@@ -53,9 +53,11 @@ png_bytep *row_pointers = NULL;
   fclose(fp);
 }*/
 
-void read_png_file(char *filename)
+void read_png_file(const char *filename)
 {
     FILE *fp = fopen(filename, "rb");
+
+    std::cout << "file opened" << std::endl;
 
     png_structp png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
     if (!png)
@@ -208,10 +210,10 @@ void gauss_derivatives(gray8_image *img, int size, gray8_image *imx, gray8_image
     gray8_image *gx = new gray8_image(2*size + 1, 2*size + 1);
     gray8_image *gy = new gray8_image(2*size + 1, 2*size + 1);
     gauss_derivative_kernels(size, size, gx, gy);
-    std::cout << gx->pixels[5 * gx->sy + 5] << "\n";
-    std::cout << img->pixels[100 * img->sy + 250] << "\n";
+    //std::cout << gx->pixels[5 * gx->sy + 5] << "\n";
+    //std::cout << img->pixels[100 * img->sy + 250] << "\n";
     imx->pixels = img->gray_convolution(gx)->pixels;
-    std::cout << imx->pixels[200 * imx->sy + 20] << "\n";
+    //std::cout << imx->pixels[200 * imx->sy + 20] << "\n";
     imy->pixels = img->gray_convolution(gy)->pixels;
 }
 
@@ -330,8 +332,8 @@ bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
     return res;
     
 }
-void detect_point(char *filename = "img/b001.png") {
-
+void detect_point(const char *filename = "img/b001.png") {
+    std::cout << "started" << std::endl;
     read_png_file(filename);
     std::cout << "image loaded\n";
     gray8_image *test = new gray8_image(height, width, row_pointers);
@@ -345,6 +347,6 @@ void detect_point(char *filename = "img/b001.png") {
     }*/
     std::vector<Point> res = detect_harris_points(test, 30, 25, 0.1);
     for (auto i = res.begin(); i != res.end(); i++) {
-        std::cout << (*i).x << " " << (*i).y << "\n";
+        std::cout << (*i).x << " " << (*i).y << std::endl;
     }
 }

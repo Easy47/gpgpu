@@ -68,8 +68,7 @@ gray8_image *img_div(gray8_image *img, gray8_image *img2) {
     return res;
 }
 
-gray8_image *img_add(gray8_image *img, gray8_image *img2) {
-    gray8_image *res = new gray8_image(img->sx, img->sy);
+gray8_image *img_add(gray8_image *img, gray8_image *img2, gray8_image *res) {
     for (int i = 0; i < img->sx; i++) {
         for (int j = 0; j < img->sy; j++) {
             res->pixels[i * img->sy + j] = img2->pixels[i * img->sy + j] + img->pixels[i * img->sy + j];
@@ -125,9 +124,9 @@ gray8_image *gray8_image::gray_convolution(int *masque)
     return res_img;
 }
 
-gray8_image *gray8_image::gray_convolution(gray8_image* masque) {
+gray8_image *gray8_image::gray_convolution(gray8_image* masque, gray8_image *res_img) {
     int index = (masque->sx - 1) / 2;
-    gray8_image *res_img = new gray8_image(this->sx, this->sy);
+    //gray8_image *res_img = new gray8_image(this->sx, this->sy);
     for (int x = 0; x < this->sx; x++) {
         for (int y = 0; y < this->sy; y++) {
             double res = 0;

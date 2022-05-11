@@ -44,12 +44,12 @@ class gray8_image {
             /**Buffer*/
             double* pixels;
     };
-    gray8_image *img_mult(gray8_image *img, gray8_image *img2);
+    gray8_image *img_mult(gray8_image *img, gray8_image *img2, gray8_image *res);
     gray8_image *img_add(gray8_image *img, gray8_image *img2, gray8_image *res);
-    gray8_image *img_sous(gray8_image *img, gray8_image *img2);
-    gray8_image *img_mult_scalar(gray8_image *img, int val);
-    gray8_image *img_div(gray8_image *img, gray8_image *img2);
-    gray8_image *img_add_scalar(gray8_image *img, int value);
+    gray8_image *img_sous(gray8_image *img, gray8_image *img2, gray8_image *res);
+    gray8_image *img_mult_scalar(gray8_image *img, int val, gray8_image *res);
+    gray8_image *img_div(gray8_image *img, gray8_image *img2, gray8_image *res);
+    gray8_image *img_add_scalar(gray8_image *img, int value, gray8_image *res);
 
 
 

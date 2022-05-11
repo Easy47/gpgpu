@@ -46,89 +46,113 @@ __device__ double *&gray8_image::get_buffer() {
     return pixels;
 }
 
-gray8_image *img_mult_scalar(gray8_image *img, int val) {
-    gray8_image *res = new gray8_image(img->sx, img->sy);
-    for (int i = 0; i < img->sx; i++) {
-        for (int j = 0; j < img->sy; j++) {
-            res->pixels[i * img->sy + j] = img->pixels[i * img->sy + j] * val;
-        }
-    }
-    return res;
+__global__ void kvecAdd(double *img1, double *img2, double *res_img, int lgt) {
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= lgt)
+	return;
+    res_img[i] = img1[i] + img2[i];
+}
+
+__device__ gray8_image *img_add(gray8_image *img, gray8_image *img2, gray8_image *res_img) {
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
+    kvecAdd<<<dimBlock,dimGrid>>>(img->pixels, img2->pixels, res_img->pixels, img->length);
+    return res_img;
+}
+
+__global__ void kvecMultScalar(double *img1, int val, double *res_img, int lgt) {
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= lgt)
+	return;
+    res_img[i] = img1[i] * val;
+}
+
+__device__ gray8_image *img_mult_scalar(gray8_image *img, int val, gray8_image *res_img) {
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
+    kvecMultScalar<<<dimBlock,dimGrid>>>(img->pixels, val, res_img->pixels, img->length);
+    return res_img;
+}
+
+__global__ void kvecMult(double *img1, double *img2, double *res_img, int lgt) {
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= lgt)
+	return;
+    res_img[i] = img1[i] * img2[i];
 }
 
 
-gray8_image *img_mult(gray8_image *img, gray8_image *img2) {
-    gray8_image *res = new gray8_image(img->sx, img->sy);
-    for (int i = 0; i < img->sx; i++) {
-        for (int j = 0; j < img->sy; j++) {
-            res->pixels[i * img->sy + j] = img2->pixels[i * img->sy + j] * img->pixels[i * img->sy + j];
-        }
-    }
-    return res;
+gray8_image *img_mult(gray8_image *img, gray8_image *img2, gray8_image *res_img) {
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
+    kvecMult<<<dimBlock,dimGrid>>>(img->pixels, img2->pixels, res_img->pixels, img->length);
+    return res_img;
 }
 
-gray8_image *img_div(gray8_image *img, gray8_image *img2) {
-    gray8_image *res = new gray8_image(img->sx, img->sy);
-    for (int i = 0; i < img->sx; i++) {
-        for (int j = 0; j < img->sy; j++) {
-            res->pixels[i * img->sy + j] = img->pixels[i * img->sy + j] / img2->pixels[i * img->sy + j];
-        }
-    }
-    return res;
+__global__ void kvecDiv(double *img1, double *img2, double *res_img, int lgt) {
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= lgt)
+	return;
+    res_img[i] = img1[i] / img2[i];
 }
 
-gray8_image *img_add(gray8_image *img, gray8_image *img2) {
-    gray8_image *res = new gray8_image(img->sx, img->sy);
-    for (int i = 0; i < img->sx; i++) {
-        for (int j = 0; j < img->sy; j++) {
-            res->pixels[i * img->sy + j] = img2->pixels[i * img->sy + j] + img->pixels[i * img->sy + j];
-        }
-    }
-    return res;
+gray8_image *img_div(gray8_image *img, gray8_image *img2, gray8_image *res_img) {
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
+    kvecDiv<<<dimBlock,dimGrid>>>(img->pixels, img2->pixels, res_img->pixels, img->length);
+    return res_img;
 }
 
-gray8_image *img_sous(gray8_image *img, gray8_image *img2) {
-    gray8_image *res = new gray8_image(img->sx, img->sy);
-    for (int i = 0; i < img->sx; i++) {
-        for (int j = 0; j < img->sy; j++) {
-            res->pixels[i * img->sy + j] = img->pixels[i * img->sy + j] - img2->pixels[i * img->sy + j];
-        }
-    }
-    return res;
+__global__ void kvecSous(double *img1, double *img2, double *res_img, int lgt) {
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= lgt)
+	return;
+    res_img[i] = img1[i] - img2[i];
 }
 
-gray8_image *img_add_scalar(gray8_image *img, int value) {
-    gray8_image *res = new gray8_image(img->sx, img->sy);
-    for (int i = 0; i < img->sx; i++) {
-        for (int j = 0; j < img->sy; j++) {
-            res->pixels[i * img->sy + j] = img->pixels[i * img->sy + j] + value;
-        }
-    }
-    return res;
+gray8_image *img_sous(gray8_image *img, gray8_image *img2, gray8_image *res_img) {
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
+    kvecSous<<<dimBlock,dimGrid>>>(img->pixels, img2->pixels, res_img->pixels, img->length);
+    return res_img;
+}
+
+__global__ void kvecAddScalar(double *img1, int value, double *res_img, int lgt) {
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= lgt)
+	return;
+    res_img[i] = img1[i] + val;
+}
+
+gray8_image *img_add_scalar(gray8_image *img, int value, gray8_image *res_img) {
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
+    kvecAddScalar<<<dimBlock,dimGrid>>>(img->pixels, value, res_img->pixels, img->length);
+    return res_img;
 }
 
 
-gray8_image *gray8_image::gray_convolution(int *masque)
-{
+gray8_image *gray8_image::gray_convolution(gray8_image* masque, gray8_image *res_img) {
+    int index = (masque->sx - 1) / 2;
+    //gray8_image *res_img = new gray8_image(this->sx, this->sy);
+    for (int x = 0; x < this->sx; x++) {
+        for (int y = 0; y < this->sy; y++) {
+            double res = 0;
+            for (int i = -index; i <= index; i++) {
+                if (i + x < 0 || i + x >= this->sx) {
+                    continue;
+                }
+                for (int j = -index; j <= index; j++) {
+                    if (j + y < 0 || j + y >= this->sy) {
+                        continue;
+                    }
 
-    gray8_image *res_img = new gray8_image(this->sx, this->sy);
-    for (int y = 1; y < this->sy - 1; y++)
-    {
-        for (int x = 1; x < this->sx - 1; x++)
-        {
-            int res = 0;
-            for (int i = -1; i <= 1; i++)
-            {
-                for (int j = -1; j <= 1; j++)
-                {
-                    int m = masque[(i + 1) * 3 + (j + 1)];
-                    int n = this->pixels[(y + i) * this->sx + (x + j)];
+                    double m = masque->pixels[(i + index) * masque->sy + (j + index)];
+                    double n = this->pixels[(x + i) * this->sy + (y + j)];
                     res += m * n;
                 }
             }
-            res = std::min(255, res);
-            res = std::max(0, res);
-            res_img->get_buffer()[y * this->sx + x] = res;
+            res_img->pixels[x * this->sy + y] = res;
         }
     }
     return res_img;

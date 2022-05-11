@@ -71,11 +71,16 @@ endif()
 find_package(PNG REQUIRED)
 include_directories(${PNG_INCLUDE_DIR})
 
-add_executable(harris src/mandel.cpp src/harris_cpu.hpp src/harris_cpu.cc src/image.hh src/image.cc)
+add_executable(harris_cpu src/mandel.cpp src/harris_cpu.hpp src/harris_cpu.cc src/image.hh src/image.cc src/png_handler.hh src/png_handler.cc)
+target_compile_features(harris_cpu PUBLIC cxx_std_17)
+target_link_libraries(harris_cpu PRIVATE ${PNG_LIBRARY} CLI11::CLI11 spdlog::spdlog)# renderer)
+
+add_executable(harris src/mandel.cpp src/harris_cpu.hpp src/harris.cu src/image.hh src/image.cu src/png_handler.hh src/png_handler.cc)
 target_compile_features(harris PUBLIC cxx_std_17)
 target_link_libraries(harris PRIVATE ${PNG_LIBRARY} CLI11::CLI11 spdlog::spdlog)# renderer)
+set_target_properties(harris PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
-add_executable(bench src/bench.cpp src/harris_cpu.hpp src/harris_cpu.cc src/image.hh src/image.cc)
+add_executable(bench src/bench.cpp src/harris_cpu.hpp src/harris_cpu.cc src/image.hh src/image.cc src/png_handler.hh src/png_handler.cc)
 target_compile_features(bench PUBLIC cxx_std_17)
 target_link_libraries(bench PRIVATE ${PNG_LIBRARY} spdlog::spdlog benchmark)# renderer)
 

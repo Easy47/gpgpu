@@ -7,7 +7,6 @@
 //#include <spdlog/spdlog.h>
 #include "harris_cpu.hpp"
 
-
 // Usage: ./mandel
 int main(int argc, char** argv)
 {
@@ -27,7 +26,8 @@ int main(int argc, char** argv)
 
 
   //if (mode == "CPU") {
-  detect_point(filename);
+  PNG_data image_data = read_png_file(filename);
+  detect_point(image_data);
   //}
   /*else if (mode == "GPU")
   {

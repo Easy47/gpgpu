@@ -219,8 +219,9 @@ bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
     return res;
     
 }
+
 void detect_point(PNG_data image_data) {
-    std::cout << "started" << std::endl;
+    std::cout << "started GPU" << std::endl;
     gray8_image *test = new gray8_image(image_data.height, image_data.width, image_data.row_pointers);
     std::cout << "grayscale image\n";
     /*gray8_image *res = compute_harris_response(test);

@@ -3,11 +3,14 @@
 #include <iostream>
 #include <math.h>
 
-gray8_image::gray8_image(int height, int width, png_bytep *row_pointers) {
+__host__ gray8_image::gray8_image(int height, int width, png_bytep *row_pointers) {
     sx = height;
     sy = width;
     length = sx * sy;
-    pixels = new double[length];
+
+    auto rc = cudaMalloc(&pixels, sizeof(double) * length);//new double[length];
+    if (rc)
+        abortError("Fail buffer allocation in gray8_image");
 
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
@@ -16,24 +19,30 @@ gray8_image::gray8_image(int height, int width, png_bytep *row_pointers) {
             auto g = pixel[1];
             auto b = pixel[2];
             auto transp = pixel[3];
-            pixels[i * width + j] = 0.299 * r + 0.587 * g + 0.114 * b;;
+            pixels[i * width + j] = 0.299 * r + 0.587 * g + 0.114 * b;
         }
     }
 }
 
-gray8_image::gray8_image(int _sx, int _sy) {
+__host__ gray8_image::gray8_image(int _sx, int _sy) {
     this->sx = _sx;
     this->sy = _sy;
 
     this->length = sx * sy;
-    this->pixels = new double[length];
+    //this->pixels = new double[length];
+    auto rc = cudaMalloc(&pixels, sizeof(double) * length);//new double[length];
+    if (rc)
+        abortError("Fail buffer allocation in gray8_image(empty)");
 }
 
-gray8_image::~gray8_image() {
-    delete [] pixels;
+__host__ gray8_image::~gray8_image() {
+    auto rc = cudaFree(pixels);
+    if (rc)
+        abortError("Fail buffer free in gray8_image");
+    //delete [] pixels;
 }
 
-double *&gray8_image::get_buffer() {
+__device__ double *&gray8_image::get_buffer() {
     return pixels;
 }
 

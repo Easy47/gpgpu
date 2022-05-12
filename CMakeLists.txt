@@ -82,7 +82,6 @@ target_link_libraries(harris PRIVATE ${PNG_LIBRARY} CLI11::CLI11 spdlog::spdlog)
 set_target_properties(harris PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 add_executable(bench src/mandel.cpp ${all_SRCS})
-#add_executable(bench src/mandel.cpp src/CPU/harris_cpu.cc src/CPU/harris_cpu.hh src/CPU/image.cc src/CPU/image.hh src/CPU/png_handler.cc src/CPU/png_handler.hh src/GPU/harris.cu src/GPU/harris_cpu.hh src/GPU/image.cu src/GPU/image.cu src/gpu/image.hh)
 target_compile_features(bench PUBLIC cxx_std_17)
 target_link_libraries(bench PRIVATE ${PNG_LIBRARY} spdlog::spdlog benchmark)# renderer)
 set_target_properties(bench PROPERTIES CUDA_SEPARABLE_COMPILATION ON)

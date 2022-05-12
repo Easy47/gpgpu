@@ -43,11 +43,14 @@ class gray8_image {
             int length;
             /**Buffer*/
             double* pixels;
-};
-__global__ void kvecAdd(double *img1, double *img2, double *res_img, int lgt);
-__global__ void kvecMultScalar(double *img1, int val, double *res_img, int lgt);
-__global__ void kvecMult(double *img1, double *img2, double *res_img, int lgt);
-__global__ void kvecDiv(double *img1, double *img2, double *res_img, int lgt);
-__global__ void kvecSous(double *img1, double *img2, double *res_img, int lgt);
-__global__ void kvecAddScalar(double *img1, int value, double *res_img, int lgt);
+    };
+    gray8_image *img_mult(gray8_image *img, gray8_image *img2);
+    gray8_image *img_add(gray8_image *img, gray8_image *img2, gray8_image *res);
+    gray8_image *img_sous(gray8_image *img, gray8_image *img2);
+    gray8_image *img_mult_scalar(gray8_image *img, int val);
+    gray8_image *img_div(gray8_image *img, gray8_image *img2);
+    gray8_image *img_add_scalar(gray8_image *img, int value);
+
+
+
 

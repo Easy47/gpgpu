@@ -35,25 +35,27 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR} )
 # find_package(CUDA REQUIRED)
 find_package(TBB REQUIRED)
 
+set(CMAKE_CUDA_FLAGS "-g -G") 
+
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3")
 
 
-add_library(renderer)
-target_compile_features(renderer PUBLIC cxx_std_14)
-target_link_libraries(renderer PRIVATE spdlog::spdlog)
+#add_library(renderer)
+#target_compile_features(renderer PUBLIC cxx_std_14)
+#target_link_libraries(renderer PRIVATE spdlog::spdlog)
 
 
 if (NOT PROF)
-  target_sources(renderer PRIVATE src/harris_cpu.hpp src/image.cc src/harris_cpu.cc)
-  set_target_properties(renderer PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  # target_sources(renderer PRIVATE src/harris_cpu.hpp src/image.cc src/harris_cpu.cc)
+  # set_target_properties(renderer PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
   # add_library(render_cpu_ref SHARED IMPORTED)
   # target_link_libraries(render_cpu_ref INTERFACE tbb)
   # set_target_properties(render_cpu_ref PROPERTIES IMPORTED_LOCATION ${PROJECT_SOURCE_DIR}/librender_cpu_ref.so)
 else()
-  target_sources(renderer PRIVATE src/harris_cpu.hpp src/render_prof.cu)
-  set_target_properties(renderer PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+  # target_sources(renderer PRIVATE src/harris_cpu.hpp src/render_prof.cu)
+  # set_target_properties(renderer PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
   add_library(render_cpu_ref SHARED IMPORTED)
   target_link_libraries(render_cpu_ref INTERFACE tbb)
@@ -71,14 +73,18 @@ endif()
 find_package(PNG REQUIRED)
 include_directories(${PNG_INCLUDE_DIR})
 
+include_directories(src)
+file(GLOB all_SRCS "src/GPU/*")
 
-add_executable(harris src/mandel.cpp src/CPU/* src/GPU/*)
+add_executable(harris src/mandel.cpp ${all_SRCS})
 target_compile_features(harris PUBLIC cxx_std_17)
 target_link_libraries(harris PRIVATE ${PNG_LIBRARY} CLI11::CLI11 spdlog::spdlog)# renderer)
 set_target_properties(harris PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
-add_executable(bench src/mandel.cpp src/CPU/* src/GPU/*)
+add_executable(bench src/mandel.cpp ${all_SRCS})
+#add_executable(bench src/mandel.cpp src/CPU/harris_cpu.cc src/CPU/harris_cpu.hh src/CPU/image.cc src/CPU/image.hh src/CPU/png_handler.cc src/CPU/png_handler.hh src/GPU/harris.cu src/GPU/harris_cpu.hh src/GPU/image.cu src/GPU/image.cu src/gpu/image.hh)
 target_compile_features(bench PUBLIC cxx_std_17)
 target_link_libraries(bench PRIVATE ${PNG_LIBRARY} spdlog::spdlog benchmark)# renderer)
+set_target_properties(bench PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 

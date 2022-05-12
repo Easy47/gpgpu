@@ -53,12 +53,12 @@ __global__ void kvecAdd(double *img1, double *img2, double *res_img, int lgt) {
     res_img[i] = img1[i] + img2[i];
 }
 
-__device__ gray8_image *img_add(gray8_image *img, gray8_image *img2, gray8_image *res_img) {
+/*__device__ gray8_image *img_add(gray8_image *img, gray8_image *img2, gray8_image *res_img) {
     dim3 dimBlock(32, 32);
     dim3 dimGrid(img->sx/dimBlock.x, img->sy/dimBlock.y);
     kvecAdd<<<dimBlock,dimGrid>>>(img->pixels, img2->pixels, res_img->pixels, img->length);
     return res_img;
-}
+}*/
 
 __global__ void kvecMultScalar(double *img1, int val, double *res_img, int lgt) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -67,12 +67,6 @@ __global__ void kvecMultScalar(double *img1, int val, double *res_img, int lgt) 
     res_img[i] = img1[i] * val;
 }
 
-__device__ gray8_image *img_mult_scalar(gray8_image *img, int val, gray8_image *res_img) {
-    dim3 dimBlock(32, 32);
-    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
-    kvecMultScalar<<<dimBlock,dimGrid>>>(img->pixels, val, res_img->pixels, img->length);
-    return res_img;
-}
 
 __global__ void kvecMult(double *img1, double *img2, double *res_img, int lgt) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -82,12 +76,6 @@ __global__ void kvecMult(double *img1, double *img2, double *res_img, int lgt) {
 }
 
 
-gray8_image *img_mult(gray8_image *img, gray8_image *img2, gray8_image *res_img) {
-    dim3 dimBlock(32, 32);
-    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
-    kvecMult<<<dimBlock,dimGrid>>>(img->pixels, img2->pixels, res_img->pixels, img->length);
-    return res_img;
-}
 
 __global__ void kvecDiv(double *img1, double *img2, double *res_img, int lgt) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -96,12 +84,6 @@ __global__ void kvecDiv(double *img1, double *img2, double *res_img, int lgt) {
     res_img[i] = img1[i] / img2[i];
 }
 
-gray8_image *img_div(gray8_image *img, gray8_image *img2, gray8_image *res_img) {
-    dim3 dimBlock(32, 32);
-    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
-    kvecDiv<<<dimBlock,dimGrid>>>(img->pixels, img2->pixels, res_img->pixels, img->length);
-    return res_img;
-}
 
 __global__ void kvecSous(double *img1, double *img2, double *res_img, int lgt) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -110,12 +92,6 @@ __global__ void kvecSous(double *img1, double *img2, double *res_img, int lgt) {
     res_img[i] = img1[i] - img2[i];
 }
 
-gray8_image *img_sous(gray8_image *img, gray8_image *img2, gray8_image *res_img) {
-    dim3 dimBlock(32, 32);
-    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
-    kvecSous<<<dimBlock,dimGrid>>>(img->pixels, img2->pixels, res_img->pixels, img->length);
-    return res_img;
-}
 
 __global__ void kvecAddScalar(double *img1, int value, double *res_img, int lgt) {
     int i = blockDim.x * blockIdx.x + threadIdx.x;
@@ -124,12 +100,6 @@ __global__ void kvecAddScalar(double *img1, int value, double *res_img, int lgt)
     res_img[i] = img1[i] + val;
 }
 
-gray8_image *img_add_scalar(gray8_image *img, int value, gray8_image *res_img) {
-    dim3 dimBlock(32, 32);
-    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
-    kvecAddScalar<<<dimBlock,dimGrid>>>(img->pixels, value, res_img->pixels, img->length);
-    return res_img;
-}
 
 
 gray8_image *gray8_image::gray_convolution(gray8_image* masque, gray8_image *res_img) {

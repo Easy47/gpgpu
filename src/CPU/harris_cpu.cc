@@ -4,7 +4,7 @@
 #include <algorithm>
 #include <vector>
 #include "image.hh"
-#include "harris_cpu.hpp"
+#include "harris_cpu.hh"
 
 void mgrid(int v11, int v12, int v21, int v22, gray8_image *t1, gray8_image *t2) {
 

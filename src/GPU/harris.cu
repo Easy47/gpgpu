@@ -4,7 +4,8 @@
 #include <algorithm>
 #include <vector>
 #include "image.hh"
-#include "harris_cpu.hpp"
+#include "harris_cpu.hh"
+#include "kernels.h"
 
 void mgrid(int v11, int v12, int v21, int v22, gray8_image *t1, gray8_image *t2) {
 
@@ -121,34 +122,79 @@ gray8_image *compute_harris_response(gray8_image *img) {
     gray8_image *gauss = new gray8_image(2*OPENING_SIZE + 1, 2*OPENING_SIZE + 1);
     gauss_kernel(OPENING_SIZE, OPENING_SIZE, gauss);
 
-    
+      dim3 blocks((cols+threads.x-1)/threads.x,
+              (rows+threads.y-1)/threads.y);
 
-    gray8_image *imx2 = img_mult(imx, imx);
+
+    gray8_image *imx2 = new gray8_image(imx->sx, imx->sy);
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+    kvecMult<<<dimBlock,dimGrid>>>(imx->pixels, imx->pixels, imx2->pixels, imx->length); 
+
+    //gray8_image *imx2 = img_mult(imx, imx);
 
     gray8_image *Wxx = new gray8_image(imx2->sx, imx2->sy);
     imx2->gray_convolution(gauss, Wxx);
 
-    gray8_image *imximy = img_mult(imx, imy);   
+
+    gray8_image *imximy = new gray8_image(imx->sx, imx->sy);
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+    kvecMult<<<dimBlock,dimGrid>>>(imx->pixels, imy->pixels, imximy->pixels, imx->length); 
+    //gray8_image *imximy = img_mult(imx, imy);   
 
     auto Wxy = new gray8_image(imximy->sx, imximy->sy);
     imximy->gray_convolution(gauss, Wxy);
 
-    gray8_image *imy2 = img_mult(imy, imy);
+    gray8_image *imy2 = new gray8_image(imx->sx, imx->sy);
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+    kvecMult<<<dimBlock,dimGrid>>>(imy->pixels, imy->pixels, imy2->pixels, imx->length); 
+    //gray8_image *imy2 = img_mult(imy, imy);
 
     auto Wyy = new gray8_image(imy2->sx, imy2->sy);
     imy2->gray_convolution(gauss, Wyy);
 
-    auto s1 = img_mult(Wxx, Wyy);
-    auto s2 = img_mult(Wxy, Wxy);
-    auto Wdet = img_sous(s1, s2);
+    gray8_image *s1 = new gray8_image(imx->sx, imx->sy);
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+    kvecMult<<<dimBlock,dimGrid>>>(Wxx->pixels, Wyy->pixels, s1->pixels, imx->length); 
+    //auto s1 = img_mult(Wxx, Wyy);
+
+    gray8_image *s2 = new gray8_image(imx->sx, imx->sy);
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+    kvecMult<<<dimBlock,dimGrid>>>(Wxy->pixels, Wxy->pixels, s2->pixels, imx->length); 
+    //auto s2 = img_mult(Wxy, Wxy);
+
+    gray8_image *Wdet = new gray8_image(imx->sx, imx->sy);
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+    kvecSous<<<dimBlock,dimGrid>>>(s1->pixels, s2->pixels, Wdet->pixels, imx->length); 
+    //auto Wdet = img_sous(s1, s2);
+
     delete s1;
     delete s2;
 
-    auto Wtr = new gray8_image(Wxx->sx, Wxx->sy);
-    img_add(Wxx, Wyy, Wtr);
+    //auto Wtr = new gray8_image(Wxx->sx, Wxx->sy);
+    gray8_image *Wtr = new gray8_image(imx->sx, imx->sy);
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+    kvecAdd<<<dimBlock,dimGrid>>>(Wxx->pixels, Wyy->pixels, Wtr->pixels, imx->length); 
+    //img_add(Wxx, Wyy, Wtr);
 
-    gray8_image *tmp = img_add_scalar(Wtr, 1);
-    gray8_image *res = img_div(Wdet, tmp);
+
+    gray8_image *tmp = new gray8_image(imx->sx, imx->sy);
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+    kvecAddScalar<<<dimBlock,dimGrid>>>(Wtr->pixels, 1, tmp->pixels, imx->length); 
+    //gray8_image *tmp = img_add_scalar(Wtr, 1);
+
+    gray8_image *res = new gray8_image(imx->sx, imx->sy);
+    dim3 dimBlock(32, 32);
+    dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+    kvecDiv<<<dimBlock,dimGrid>>>(Wdet->pixels, tmp->pixels, res->pixels, imx->length); 
+    //gray8_image *res = img_div(Wdet, tmp);
 
     delete imx;
     delete imy;
@@ -206,11 +252,9 @@ std::vector<Point> compute_mask(gray8_image *harris_resp, gray8_image *t2, float
 bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
 
 
-__host__ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
+std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
 
-    /*dim3 dimBlock(32, 32);
-    dim3 dimGrid(img->sx/dimBlock.x, img->sy/dimBlock.y);
-    kvecAdd<<<dimBlock,dimGrid>>>(img->pixels, img2->pixels, res_img->pixels, img->length);*/	     gray8_image *harris_resp = compute_harris_response(image_gray);
+    gray8_image *harris_resp = compute_harris_response(image_gray);
     float tmp[625] = { 
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,

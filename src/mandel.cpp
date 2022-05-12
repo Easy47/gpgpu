@@ -5,7 +5,7 @@
 
 //#include <CLI/CLI.hpp>
 //#include <spdlog/spdlog.h>
-#include "harris_cpu.hpp"
+#include "GPU/harris_gpu.hh"
 
 // Usage: ./mandel
 int main(int argc, char** argv)

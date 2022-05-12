@@ -206,8 +206,11 @@ std::vector<Point> compute_mask(gray8_image *harris_resp, gray8_image *t2, float
 bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
 
 
- std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
-    gray8_image *harris_resp = compute_harris_response(image_gray);
+__host__ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
+
+    /*dim3 dimBlock(32, 32);
+    dim3 dimGrid(img->sx/dimBlock.x, img->sy/dimBlock.y);
+    kvecAdd<<<dimBlock,dimGrid>>>(img->pixels, img2->pixels, res_img->pixels, img->length);*/	     gray8_image *harris_resp = compute_harris_response(image_gray);
     float tmp[625] = { 
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
@@ -266,13 +269,6 @@ void detect_point(PNG_data image_data) {
     std::cout << "started" << std::endl;
     gray8_image *test = new gray8_image(image_data.height, image_data.width, image_data.row_pointers);
     std::cout << "grayscale image\n";
-    /*gray8_image *res = compute_harris_response(test);
-    for (int i = 0; i < height; i++) {
-        for (int j = 0; j < width; j++) {
-            std::cout.precision(17);
-            std::cout << res->pixels[i * width + j] << " ";
-        }
-    }*/
     std::vector<Point> res = detect_harris_points(test, 30, 25, 0.1);
     for (auto i = res.begin(); i != res.end(); i++) {
         std::cout << (*i).x << " " << (*i).y << std::endl;

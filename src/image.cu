@@ -55,7 +55,7 @@ __global__ void kvecAdd(double *img1, double *img2, double *res_img, int lgt) {
 
 __device__ gray8_image *img_add(gray8_image *img, gray8_image *img2, gray8_image *res_img) {
     dim3 dimBlock(32, 32);
-    dim3 dimGrid(img->width/dimBlock.x, img->height/dimBlock.y);
+    dim3 dimGrid(img->sx/dimBlock.x, img->sy/dimBlock.y);
     kvecAdd<<<dimBlock,dimGrid>>>(img->pixels, img2->pixels, res_img->pixels, img->length);
     return res_img;
 }

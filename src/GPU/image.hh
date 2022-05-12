@@ -28,7 +28,7 @@ class gray8_image {
              */
             double*& get_buffer();
 
-            void gray_convolution(gray8_image* masque, gray8_image *res_img);
+            //void gray_convolution(gray8_image* masque, gray8_image *res_img);
             gray8_image *dilate(gray8_image* masque);
             float min();
             float max();
@@ -49,4 +49,5 @@ __global__ void kvecMult(double *img1, double *img2, double *res_img, int lgt);
 __global__ void kvecDiv(double *img1, double *img2, double *res_img, int lgt);
 __global__ void kvecSous(double *img1, double *img2, double *res_img, int lgt);
 __global__ void kvecAddScalar(double *img1, int value, double *res_img, int lgt);
-
+__global__ void kvecConvol(double *img, int img_x, int img_y, double *mask, int msk_size, double *res_img);
+__global__ void kvecDilate(double *img, int img_x, int img_y, double *mask, int msk_size, double *res_img);

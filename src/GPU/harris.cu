@@ -102,9 +102,14 @@ void gauss_derivatives(gray8_image *img, int size, gray8_image *imx, gray8_image
     gray8_image *gy = new gray8_image(2*size + 1, 2*size + 1);
     gauss_derivative_kernels(size, size, gx, gy);
 
+    dim3 dimBlockConvol(32, 32);
+    dim3 dimGridConvol((imx->sx + dimBlockConvol.x - 1)/dimBlockConvol.x, (imx->sy + dimBlockConvol.y - 1)/dimBlockConvol.y);
+
     
-    img->gray_convolution(gx, imx);
-    img->gray_convolution(gy, imy);
+    kvecConvol<<<dimBlockConvol,dimGridConvol>>>(img->pixels, img->sx, img->sy, gx->pixels, gx->sx, imx->pixels); 
+    //img->gray_convolution(gx, imx);
+    kvecConvol<<<dimBlockConvol,dimGridConvol>>>(img->pixels, img->sx, img->sy, gy->pixels, gy->sx, imy->pixels); 
+    //img->gray_convolution(gy, imy);
 
 
     delete gx;
@@ -120,20 +125,26 @@ gray8_image *compute_harris_response(gray8_image *img) {
     gauss_derivatives(img, DERIVATIVE_KERNEL_SIZE, imx, imy);
     gray8_image *gauss = new gray8_image(2*OPENING_SIZE + 1, 2*OPENING_SIZE + 1);
     gauss_kernel(OPENING_SIZE, OPENING_SIZE, gauss);
-    for (int i = 0; i < imx->length; i++)
-        std::cout << imx->pixels[i];
+    //for (int i = 0; i < imx->length; i++)
+    //    std::cout << imx->pixels[i];
 
     gray8_image *imx2 = new gray8_image(imx->sx, imx->sy);
-    dim3 dimBlock(32, 32);
-    dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+    //dim3 dimBlock(1024);
+    //dim3 dimGrid((imx->length + dimBlock.x - 1)/dimBlock.x);
+    int dimBlock = (1024);
+    int dimGrid = ((imx->length + dimBlock - 1)/dimBlock);
+
     kvecMult<<<dimBlock,dimGrid>>>(imx->pixels, imx->pixels, imx2->pixels, imx->length); 
     cudaDeviceSynchronize();
 
-
+    //std::cout << imx->sx << " * " << imx->sy << std::endl;
     //gray8_image *imx2 = img_mult(imx, imx);
+    dim3 dimBlockConvol(32, 32);
+    dim3 dimGridConvol((imx->sx + dimBlockConvol.x - 1)/dimBlockConvol.x, (imx->sy + dimBlockConvol.y - 1)/dimBlockConvol.y);
 
     gray8_image *Wxx = new gray8_image(imx2->sx, imx2->sy);
-    imx2->gray_convolution(gauss, Wxx);
+    kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imx2->pixels, imx2->sx, imx2->sy, gauss->pixels, gauss->sx, Wxx->pixels); 
+    //imx2->gray_convolution(gauss, Wxx);
 
 
     gray8_image *imximy = new gray8_image(imx->sx, imx->sy);
@@ -144,7 +155,10 @@ gray8_image *compute_harris_response(gray8_image *img) {
 
 
     auto Wxy = new gray8_image(imximy->sx, imximy->sy);
-    imximy->gray_convolution(gauss, Wxy);
+
+    kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imximy->pixels, imximy->sx, imximy->sy, gauss->pixels, gauss->sx, Wxy->pixels); 
+    //imximy->gray_convolution(gauss, Wxy);
+
 
     gray8_image *imy2 = new gray8_image(imx->sx, imx->sy);
     //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
@@ -152,8 +166,10 @@ gray8_image *compute_harris_response(gray8_image *img) {
     cudaDeviceSynchronize();
     //gray8_image *imy2 = img_mult(imy, imy);
 
+
     auto Wyy = new gray8_image(imy2->sx, imy2->sy);
-    imy2->gray_convolution(gauss, Wyy);
+    kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imy2->pixels, imy2->sx, imy2->sy, gauss->pixels, gauss->sx, Wyy->pixels); 
+    //imy2->gray_convolution(gauss, Wyy);
 
 
     gray8_image *s1 = new gray8_image(imx->sx, imx->sy);
@@ -290,7 +306,13 @@ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoin
     for (int i = 0; i < 625; i++) {
         ellipse_kernel->pixels[i] = tmp[i];
     }
-    gray8_image *dilate = harris_resp->dilate(ellipse_kernel);
+
+    gray8_image *dilate = new gray8_image(harris_resp->sx, harris_resp->sy);
+    dim3 dimBlockConvol(32, 32);
+    dim3 dimGridConvol((dilate->sx + dimBlockConvol.x - 1)/dimBlockConvol.x, (dilate->sy + dimBlockConvol.y - 1)/dimBlockConvol.y);
+    
+    kvecDilate<<<dimBlockConvol,dimGridConvol>>>(harris_resp->pixels, harris_resp->sx, harris_resp->sy, ellipse_kernel->pixels, ellipse_kernel->sx, dilate->pixels); 
+    //gray8_image *dilate = harris_resp->dilate(ellipse_kernel);
 
     //gray8_image *mask = new gray8_image(image_gray->sx, image_gray->sy);
     std::vector<Point> candidate = compute_mask(dilate, harris_resp, threshold);
@@ -317,7 +339,7 @@ void detect_point(PNG_data image_data) {
     gray8_image *test = new gray8_image(image_data.height, image_data.width, image_data.row_pointers);
     std::cout << "grayscale image\n";
     std::vector<Point> res = detect_harris_points(test, 30, 25, 0.1);
-    std::cout << res.size();
+    //std::cout << res.size();
     for (auto i = res.begin(); i != res.end(); i++) {
         std::cout << (*i).x << " " << (*i).y << std::endl;
     }

@@ -96,9 +96,11 @@ __global__ void kvecMult(double *img1, double *img2, double *res_img, int lgt) {
     if (i >= lgt)
 	return;
     res_img[i] = img1[i] * img2[i];
+    /*if (i > 500) {
     printf("i : %d, img1[i]:%lf\n", i, img1[i]);
     printf("i : %d, img2[i]:%lf\n", i, img2[i]);
     printf("res_img[i]:%lf\n",res_img[i]);
+    }*/
 }
 
 
@@ -127,6 +129,35 @@ __global__ void kvecAddScalar(double *img1, int value, double *res_img, int lgt)
 }
 
 
+__global__ void kvecConvol(double *img, int img_x, int img_y, double *mask, int msk_size, double *res_img) {
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
+    if (x >= img_x)
+	return;
+    if (y >= img_y)
+	return;
+    //printf("x: %d, y: %d | index = %d\n", x, y, x * img_y + y);
+
+    int index = (msk_size - 1) / 2;
+    double res = 0;
+    for (int i = -index; i <= index; i++) {
+        if (i + x < 0 || i + x >= img_x) {
+            continue;
+        }
+        for (int j = -index; j <= index; j++) {
+            if (j + y < 0 || j + y >= img_y) {
+                continue;
+            }
+
+            double m = mask[(i + index) * msk_size + (j + index)];
+            double n = img[(x + i) * img_y + (y + j)];
+            res += m * n;
+        }
+    }
+    res_img[x * img_y + y] = res;
+}
+
+/*
 void gray8_image::gray_convolution(gray8_image* masque, gray8_image* res_img) {
     int index = (masque->sx - 1) / 2;
     for (int x = 0; x < this->sx; x++) {
@@ -150,7 +181,37 @@ void gray8_image::gray_convolution(gray8_image* masque, gray8_image* res_img) {
         }
     }
 }
+*/
+__global__ void kvecDilate(double *img, int img_x, int img_y, double *mask, int msk_size, double *res_img) {
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
+    if (x >= img_x)
+	return;
+    if (y >= img_y)
+	return;
+    //printf("x: %d, y: %d | index = %d\n", x, y, x * img_y + y);
 
+    int index = (msk_size - 1) / 2;
+    double max = img[x * img_y + y];
+    for (int i = -index; i <= index; i++) {
+        if (i + x < 0 || i + x >= img_x) {
+            continue;
+        }
+        for (int j = -index; j <= index; j++) {
+            if (j + y < 0 || j + y >= img_y) {
+                continue;
+            }
+
+            double m = mask[(i + index) * msk_size + (j + index)];
+	    if (m == 0)
+		continue;
+            double n = img[(x + i) * img_y + (y + j)];
+	    if (n > max)
+		max = n;
+        }
+    }
+    res_img[x * img_y + y] = max;
+}
 
 gray8_image *gray8_image::dilate(gray8_image* masque) {
     int index = (masque->sx - 1) / 2;

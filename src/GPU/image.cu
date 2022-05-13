@@ -36,7 +36,7 @@ __host__ gray8_image::gray8_image(int height, int width, png_bytep *row_pointers
     sy = width;
     length = sx * sy;
 
-    auto rc = cudaMallocManaged(&pixels, sizeof(double) * length);//new double[length];
+    auto rc = cudaMalloc(&pixels, sizeof(double) * length);//new double[length];
 
     if (rc)
         abortError("Fail buffer allocation in gray8_image");
@@ -56,6 +56,7 @@ __host__ gray8_image::gray8_image(int height, int width, png_bytep *row_pointers
     /*for (int i = 0; i < length; i++)
 	    std::cout << pixels[i] << " | ";
     std::cout << std::endl;*/
+	delete buffer;
 }
 
 __host__ gray8_image::gray8_image(int _sx, int _sy) {
@@ -77,7 +78,7 @@ __host__ gray8_image::~gray8_image() {
 }
 
 __host__ void gray8_image::get_data_from(double *input) {
-    std::cout << "Starting cudaMemcpy..." << std::endl;
+    //std::cout << "Starting cudaMemcpy..." << std::endl;
     cudaMemcpy(pixels, input, length * sizeof(double), cudaMemcpyHostToDevice);
     //std::cout << "Starting synchronize..." << std::endl;
     //cudaDeviceSynchronize();

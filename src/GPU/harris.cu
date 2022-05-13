@@ -5,6 +5,8 @@
 #include <vector>
 #include "image.hh"
 #include "harris_gpu.hh"
+#include <thrust/extrema.h>
+#include <thrust/device_vector.h>
 
 __host__ void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image *gy) {
 	
@@ -212,12 +214,65 @@ class Point {
     }
 };
 
+/*
+__device__ static float atomicMax(float *address, float val) {
+	int *address_as_i = (int*) address;
+	int old = *address_as_i, assumed;
+	do {
+		assumed = old;
+		old = ::atomicCas(address_as_i, assumed, 
+				__float_as_int(::fmaxf(val, __int_as_float(assumed))));
+	} while (assumed != old);
+	return __int_as_float(old);
+}
+
+__device__ static float atomicMin(float *address, float val) {
+	int *address_as_i = (int*) address;
+	int old = *address_as_i, assumed;
+	do {
+		assumed = old;
+		old = ::atomicCas(address_as_i, assumed, 
+				__float_as_int(::fminf(val, __int_as_float(assumed))));
+	} while (assumed != old);
+	return __int_as_float(old);
+}
+
+__global__ kvecComputeMask(float max, float min, double *img_pix, int harris_sx, int harris_sy, double *harris_vals, int *coord) {
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
+    if (x >= img_x)
+	return;
+    if (y >= img_y)
+	return;
+
+	if ((abs(harris_resp->pixels[i * harris_resp->sy + j] - t2->pixels[i * harris_resp->sy + j]) <= atol * rtol * abs(t2->pixels[i * harris_resp->sy + j])) 
+	&& (harris_resp->pixels[i * harris_resp->sy + j] > min + threshold * (max - min))) {
+		//mask->pixels[i * harris_resp->sy + j] = 1;
+		Point tmp = Point(i , j, harris_resp->pixels[i * harris_resp->sy + j]);
+		res.push_back(tmp);
+	} else {
+		mask->pixels[i * harris_resp->sy + j] = 0;
+	}
+}
+*/
+
 std::vector<Point> compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
     std::vector<Point> res;
     float rtol = 0.0001;
     float atol = 0.0000001;
-    float max = t2->max();
+	
+	thrust::device_vector<double> vec((double*)t2->pixels, (double*)(t2->pixels + t2->length));
+	float maxt = *thrust::max_element(vec.begin(), vec.end());
+	float mint = *thrust::min_element(vec.begin(), vec.end());
+
     float min = t2->min();
+    float max = t2->max();
+	std::cout << "thrust max: " << maxt << std::endl;
+	std::cout << "thrust min: " << mint << std::endl;
+
+	std::cout << "max: " << max << std::endl;
+	std::cout << "min: " << min << std::endl;
+
     for (int i = 0; i < harris_resp->sx; i++) {
         for (int j = 0; j < harris_resp->sy; j++) {
             if ((abs(harris_resp->pixels[i * harris_resp->sy + j] - t2->pixels[i * harris_resp->sy + j]) <= atol * rtol * abs(t2->pixels[i * harris_resp->sy + j])) 
@@ -239,7 +294,7 @@ bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
 std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
 
     gray8_image *harris_resp = compute_harris_response(image_gray);
-    float tmp[625] = { 
+    double tmp[625] = { 
                     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0,
                     0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0,
@@ -268,9 +323,7 @@ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoin
                 };
 
     gray8_image *ellipse_kernel = new gray8_image(25,25);
-    for (int i = 0; i < 625; i++) {
-        ellipse_kernel->pixels[i] = tmp[i];
-    }
+	ellipse_kernel->get_data_from(tmp);
 
     gray8_image *dilate = new gray8_image(harris_resp->sx, harris_resp->sy);
     dim3 dimBlockConvol(32, 32);

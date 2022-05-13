@@ -241,7 +241,11 @@ __device__ static float atomicMin(float *address, float val) {
 
 __device__ int dev_count_d = 0;
 
-__device__ int my_push_back(double *harris, int **coord, double harris_val, int *coord_val, int length) {
+struct Position {
+	int x, y;
+};
+
+__device__ int my_push_back(double *harris, Position *coord, double harris_val, Position coord_val, int length) {
 	int insert_pt = atomicAdd(&dev_count_d, 1);
 	if (insert_pt < length) {
 		harris[insert_pt] = harris_val;
@@ -251,7 +255,7 @@ __device__ int my_push_back(double *harris, int **coord, double harris_val, int 
 	return -1;
 }
 
-__global__ void kvecComputeMask(double max, double min, double *img_pix, double *harris_pix, int harris_sx, int harris_sy, double *harris_vals, int **coord, float threshold) {
+__global__ void kvecComputeMask(double max, double min, double *img_pix, double *harris_pix, int harris_sx, int harris_sy, double *harris_vals, Position*coord, float threshold) {
     float rtol = 0.0001;
     float atol = 0.0000001;
     int x = blockDim.x * blockIdx.x + threadIdx.x;
@@ -264,12 +268,12 @@ __global__ void kvecComputeMask(double max, double min, double *img_pix, double 
 	if ((abs(harris_pix[x * harris_sy + y] - img_pix[x * harris_sy + y]) <= atol * rtol * abs(img_pix[x * harris_sy + y])) 
 	&& (harris_pix[x * harris_sy + y] > min + threshold * (max - min))) {
 		// Point tmp = Point(i , j, harris_resp->pixels[i * harris_resp->sy + j]);
-		int coord_val[2] = {x, y};
+		Position coord_val = {x, y};
 		my_push_back(harris_vals, coord, harris_pix[x * harris_sy + y], coord_val, harris_sx * harris_sy);
 	}
 }
 
-int** compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
+Position* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
     std::vector<Point> res;
 	
 	thrust::device_vector<double> vec((double*)t2->pixels, (double*)(t2->pixels + t2->length));
@@ -277,10 +281,10 @@ int** compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
 	double min = *thrust::min_element(vec.begin(), vec.end());
 
 	double *harris_vals;
-	int **coord;
+	Position *coord;
 	int length = harris_resp->length;
     cudaMallocManaged(&harris_vals, sizeof(double) * length);
-    cudaMallocManaged(&coord, sizeof(int*) * length);
+    cudaMallocManaged(&coord, sizeof(Position) * length);
 
     dim3 dimBlockConvol(32, 32);
     dim3 dimGridConvol((harris_resp->sx + dimBlockConvol.x - 1)/dimBlockConvol.x, (harris_resp->sy + dimBlockConvol.y - 1)/dimBlockConvol.y);
@@ -291,30 +295,10 @@ int** compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
 	int dev_count;
 	cudaMemcpyFromSymbol(&dev_count, dev_count_d, sizeof(dev_count_d), 0, cudaMemcpyDeviceToHost);
 
-	/*
-    for (int i = 0; i < harris_resp->sx; i++) {
-        for (int j = 0; j < harris_resp->sy; j++) {
-            if ((abs(harris_resp->pixels[i * harris_resp->sy + j] - t2->pixels[i * harris_resp->sy + j]) <= atol * rtol * abs(t2->pixels[i * harris_resp->sy + j])) 
-            && (harris_resp->pixels[i * harris_resp->sy + j] > min + threshold * (max - min))) {
-                //mask->pixels[i * harris_resp->sy + j] = 1;
-                Point tmp = Point(i , j, harris_resp->pixels[i * harris_resp->sy + j]);
-                res.push_back(tmp);
-            }
-        }
-    }
-	*/
-
-	/*
-	// print coords
-	for (int i = 0; i < dev_count; i++) {
-		std::cout << coord[i][0] << " " << coord[i][1] << std::endl;
-	}
-	*/
-
 	double *sorted_harris_vals;
-	int **sorted_coord;
+	Position *sorted_coord;
     cudaMallocManaged(&sorted_harris_vals, sizeof(double) * length);
-    cudaMallocManaged(&sorted_coord, sizeof(int*) * length);
+    cudaMallocManaged(&sorted_coord, sizeof(Position) * length);
 
 	void *d_tmp_storage = NULL;
 	size_t tmp_storage_bytes = 0;
@@ -326,19 +310,13 @@ int** compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
 
 	cudaDeviceSynchronize();
 
-	for (int i = 0; i < dev_count; i++) {
-		std::cout << sorted_harris_vals[i] << std::endl;
-	}
-
-    // std::sort(candidate.begin(), candidate.end(), myfunction);
-	//TODO fix coords allocation
-    return coord;
+    return sorted_coord;
 }
 
 bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
 
 
-std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
+std::vector<Position> detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
 
     gray8_image *harris_resp = compute_harris_response(image_gray);
     double tmp[625] = { 
@@ -381,9 +359,13 @@ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoin
     cudaDeviceSynchronize();
 
     //gray8_image *mask = new gray8_image(image_gray->sx, image_gray->sy);
-	compute_mask(dilate, harris_resp, threshold);
+	Position *candidate = compute_mask(dilate, harris_resp, threshold);
+    // std::sort(candidate.begin(), candidate.end(), myfunction);
 
-    std::vector<Point> res;
+    std::vector<Position> res;
+	for (int i = 0; i < max_keypoints; i++) {
+		res.push_back(candidate[i]);
+	}
 	/*
     int nb = 0;
     for (auto i = candidate.begin(); i != candidate.end(); i++) {
@@ -394,18 +376,18 @@ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoin
         res.push_back(*i);
     }
 	*/
+
     delete harris_resp;
     delete ellipse_kernel;
     delete dilate;
     return res;
-
 }
 
 void detect_point(PNG_data image_data) {
     std::cout << "started" << std::endl;
     gray8_image *test = new gray8_image(image_data.height, image_data.width, image_data.row_pointers);
     std::cout << "grayscale image\n";
-    std::vector<Point> res = detect_harris_points(test, 30, 25, 0.1);
+    std::vector<Position> res = detect_harris_points(test, 30, 25, 0.1);
     //std::cout << res.size();
     for (auto i = res.begin(); i != res.end(); i++) {
         std::cout << (*i).x << " " << (*i).y << std::endl;

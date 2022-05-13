@@ -25,75 +25,58 @@ void mgrid(int v11, int v12, int v21, int v22, gray8_image *t1, gray8_image *t2)
 }
 
 void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image *gy) {
+	
+    float gx_tmp[49] = { 
+	0.000308397, 0.00263511, 0.00608749, -0, -0.00608749, -0.00263511, -0.000308397,
+	0.00395267, 0.0337738, 0.0780223, -0, -0.0780223, -0.0337738, -0.00395267,
+	0.0182625, 0.156045, 0.360485, -0, -0.360485, -0.156045, -0.0182625,
+	0.0304169, 0.259899, 0.600404, -0, -0.600404, -0.259899, -0.0304169,
+	0.0182625, 0.156045, 0.360485, -0, -0.360485, -0.156045, -0.0182625,
+	0.00395267, 0.0337738, 0.0780223, -0, -0.0780223, -0.0337738, -0.00395267,
+	0.000308397, 0.00263511, 0.00608749, -0, -0.00608749, -0.00263511, -0.000308397,
+    };
 
-    sizey = size;
-    int size1 = std::abs(-size) + std::abs(size) + 1;
-    int size2 = std::abs(-sizey) + std::abs(sizey) + 1;
+    float gy_tmp[49] = { 
+	0.000308397, 0.00395267, 0.0182625, 0.0304169, 0.0182625, 0.00395267, 0.000308397, 
+	0.00263511, 0.0337738, 0.156045, 0.259899, 0.156045, 0.0337738, 0.00263511, 
+	0.00608749, 0.0780223, 0.360485, 0.600404, 0.360485, 0.0780223, 0.00608749, 
+	-0, -0, -0, -0, -0, -0, -0, 
+	-0.00608749, -0.0780223, -0.360485, -0.600404, -0.360485, -0.0780223, -0.00608749, 
+	-0.00263511, -0.0337738, -0.156045, -0.259899, -0.156045, -0.0337738, -0.00263511, 
+	-0.000308397, -0.00395267, -0.0182625, -0.0304169, -0.0182625, -0.00395267, -0.000308397, 
+    };
 
-
-    //gray8_image *gx = new gray8_image(size1, size1);
-    //gray8_image *gy = new gray8_image(size1, size2);
-
-    //float **gx = new float *[size1];
-    //float **gy = new float *[size1];
-
-    gray8_image *y = new gray8_image(size1, size1);
-    gray8_image *x = new gray8_image(size1, size1);
-
-    mgrid(-size, size + 1, -sizey, sizey + 1, y, x);
-
-    double val1 = (0.33*size) * (0.33*size) * 2;
-    double val2 = (0.33*sizey) * (0.33*sizey) * 2;
-
-    for (int i = 0; i < size1; i++) {
-        for (int j = 0; j < size1; j++) {
-            gx->pixels[i * size1 + j] = -1 * x->pixels[i * size1 + j] * std::exp(-1 * ((x->pixels[i * size1 + j] * x->pixels[i * size1 + j] / val1) + (y->pixels[i * size1 +j] * y->pixels[i * size1 + j] / val1)));
-            gy->pixels[i * size1 + j]= -1 * y->pixels[i * size2 + j] * std::exp(-1 * ((x->pixels[i * size1 + j] * x->pixels[i * size1 + j] / val1) + (y->pixels[i * size1 + j] * y->pixels[i * size1 + j] / val1)));
-        }
+    for(int i = 0; i < 49; i++) {
+	gx->pixels[i] = gx_tmp[i];
+	gy->pixels[i] = gy_tmp[i];
     }
-    delete y;
-    delete x;
 }
+
 void gauss_kernel(int size, int sizey, gray8_image *res) {
 
-    int size1 = std::abs(-size) + std::abs(size) + 1;
-    int size2 = std::abs(-sizey) + std::abs(sizey) + 1;
-
-    //float **y = new float *[size1];
-    //float **x = new float *[size2];
-
-    gray8_image *y = new gray8_image(size1, size1);
-    gray8_image *x = new gray8_image(size1, size2);
-
-    mgrid(-size, size + 1, -sizey, sizey + 1, y, x);
-    
-    double val1 = (0.33*size) * (0.33*size) * 2;
-    double val2 = (0.33*sizey) * (0.33*sizey) * 2;
-
-    for (int i = 0; i < size2; i++) {
-        for (int j = 0; j < size2; j++) {
-            y->pixels[i * size1 + j] *= y->pixels[i * size1 + j] / val2;
-        }
+    float g_tmp[49] = { 
+	0.000102799, 0.00131756, 0.00608749, 0.010139, 0.00608749, 0.00131756, 0.000102799, 
+	0.00131756, 0.0168869, 0.0780223, 0.12995, 0.0780223, 0.0168869, 0.00131756, 
+	0.00608749, 0.0780223, 0.360485, 0.600404, 0.360485, 0.0780223, 0.00608749, 
+	0.010139, 0.12995, 0.600404, 1, 0.600404, 0.12995, 0.010139, 
+	0.00608749, 0.0780223, 0.360485, 0.600404, 0.360485, 0.0780223, 0.00608749, 
+	0.00131756, 0.0168869, 0.0780223, 0.12995, 0.0780223, 0.0168869, 0.00131756, 
+	0.000102799, 0.00131756, 0.00608749, 0.010139, 0.00608749, 0.00131756, 0.000102799, 
+    };
+    for(int i = 0; i < 49; i++) {
+	res->pixels[i] = g_tmp[i];
     }
+}
 
-    for (int i = 0; i < size1; i++) {
-        for (int j = 0; j < size1; j++) {
-            x->pixels[i * size1 + j] *= x->pixels[i * size1 + j] / val1; 
-        }
+void print_img(gray8_image *img){
+    std::cout << "{\n";
+    for (int x = 0; x < img->sx; x++) {
+	for (int y = 0; y < img->sy; y++) {
+	    std::cout << img->pixels[x * img->sy + y] << ", ";
+	}
+	std::cout << "\n";
     }
-
-    //float **res = new float *[size1];
-    //gray8_image *res = new gray8_image(size1, size1);
-
-    for (int i = 0; i < size1; i++) {
-        for (int j = 0; j < size1; j++) {
-            res->pixels[i * size1 + j] = std::exp(-(x->pixels[i * size1 + j] + y->pixels[i * size1 + j]));
-            //std::cout << res->pixels[i * size1 + j] << " ";
-        }
-        //std::cout << "\n";
-    }
-    delete y;
-    delete x;
+    std::cout << "}\n";
 }
 
 void gauss_derivatives(gray8_image *img, int size, gray8_image *imx, gray8_image *imy) {
@@ -101,6 +84,7 @@ void gauss_derivatives(gray8_image *img, int size, gray8_image *imx, gray8_image
     gray8_image *gx = new gray8_image(2*size + 1, 2*size + 1);
     gray8_image *gy = new gray8_image(2*size + 1, 2*size + 1);
     gauss_derivative_kernels(size, size, gx, gy);
+
 
     dim3 dimBlockConvol(32, 32);
     dim3 dimGridConvol((imx->sx + dimBlockConvol.x - 1)/dimBlockConvol.x, (imx->sy + dimBlockConvol.y - 1)/dimBlockConvol.y);
@@ -110,6 +94,7 @@ void gauss_derivatives(gray8_image *img, int size, gray8_image *imx, gray8_image
     //img->gray_convolution(gx, imx);
     kvecConvol<<<dimBlockConvol,dimGridConvol>>>(img->pixels, img->sx, img->sy, gy->pixels, gy->sx, imy->pixels); 
     //img->gray_convolution(gy, imy);
+    cudaDeviceSynchronize();
 
 
     delete gx;
@@ -125,8 +110,6 @@ gray8_image *compute_harris_response(gray8_image *img) {
     gauss_derivatives(img, DERIVATIVE_KERNEL_SIZE, imx, imy);
     gray8_image *gauss = new gray8_image(2*OPENING_SIZE + 1, 2*OPENING_SIZE + 1);
     gauss_kernel(OPENING_SIZE, OPENING_SIZE, gauss);
-    //for (int i = 0; i < imx->length; i++)
-    //    std::cout << imx->pixels[i];
 
     gray8_image *imx2 = new gray8_image(imx->sx, imx->sy);
     //dim3 dimBlock(1024);
@@ -171,6 +154,9 @@ gray8_image *compute_harris_response(gray8_image *img) {
     kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imy2->pixels, imy2->sx, imy2->sy, gauss->pixels, gauss->sx, Wyy->pixels); 
     //imy2->gray_convolution(gauss, Wyy);
 
+    // FAIS BUGGUER ?.? K?E¨?E¨?ER%.D?E??.RFP?. -------------------------------------------------------------------------------------*|*|*|*|
+    cudaDeviceSynchronize();
+
 
     gray8_image *s1 = new gray8_image(imx->sx, imx->sy);
     //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
@@ -189,7 +175,9 @@ gray8_image *compute_harris_response(gray8_image *img) {
     gray8_image *Wdet = new gray8_image(imx->sx, imx->sy);
     //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
     kvecSous<<<dimBlock,dimGrid>>>(s1->pixels, s2->pixels, Wdet->pixels, imx->length); 
-    cudaDeviceSynchronize();
+
+    // ENLEVABLE ??? -----------------------------
+    //cudaDeviceSynchronize();
     //auto Wdet = img_sous(s1, s2);
 
     delete s1;
@@ -313,6 +301,7 @@ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoin
     
     kvecDilate<<<dimBlockConvol,dimGridConvol>>>(harris_resp->pixels, harris_resp->sx, harris_resp->sy, ellipse_kernel->pixels, ellipse_kernel->sx, dilate->pixels); 
     //gray8_image *dilate = harris_resp->dilate(ellipse_kernel);
+    cudaDeviceSynchronize();
 
     //gray8_image *mask = new gray8_image(image_gray->sx, image_gray->sy);
     std::vector<Point> candidate = compute_mask(dilate, harris_resp, threshold);

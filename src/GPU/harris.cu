@@ -304,9 +304,12 @@ int** compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
     }
 	*/
 
+	/*
+	// print coords
 	for (int i = 0; i < dev_count; i++) {
 		std::cout << coord[i][0] << " " << coord[i][1] << std::endl;
 	}
+	*/
 
 	double *sorted_harris_vals;
 	int **sorted_coord;
@@ -320,8 +323,15 @@ int** compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
 	cudaMallocManaged(&d_tmp_storage, tmp_storage_bytes);
 
 	cub::DeviceRadixSort::SortPairs(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
+
+	cudaDeviceSynchronize();
+
+	for (int i = 0; i < dev_count; i++) {
+		std::cout << sorted_harris_vals[i] << std::endl;
+	}
+
     // std::sort(candidate.begin(), candidate.end(), myfunction);
-	//TODO fix coords allocation / sort
+	//TODO fix coords allocation
     return coord;
 }
 

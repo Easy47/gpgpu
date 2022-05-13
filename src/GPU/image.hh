@@ -27,6 +27,7 @@ class gray8_image {
              * @return the pixel buffer.
              */
             double*& get_buffer();
+	    void get_data_from(double *input);
 
             //void gray_convolution(gray8_image* masque, gray8_image *res_img);
             gray8_image *dilate(gray8_image* masque);

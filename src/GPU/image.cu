@@ -24,6 +24,12 @@ void _abortError(const char* msg, const char* fname, int line)
 }
 
 #define abortError(msg) _abortError(msg, __FUNCTION__, __LINE__)
+/*__global__ void kvecPrint(double *img, int lgt) {
+    int i = blockDim.x * blockIdx.x + threadIdx.x;
+    if (i >= lgt)
+	return;
+    res_img[i] = img1[i] + img2[i];
+}*/
 
 __host__ gray8_image::gray8_image(int height, int width, png_bytep *row_pointers) {
     sx = height;
@@ -35,6 +41,7 @@ __host__ gray8_image::gray8_image(int height, int width, png_bytep *row_pointers
     if (rc)
         abortError("Fail buffer allocation in gray8_image");
 
+    double *buffer = new double[length];
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < width; j++) {
             png_bytep pixel = &(row_pointers[i][j * 4]);
@@ -42,9 +49,13 @@ __host__ gray8_image::gray8_image(int height, int width, png_bytep *row_pointers
             auto g = pixel[1];
             auto b = pixel[2];
             auto transp = pixel[3];
-            pixels[i * width + j] = 0.299 * r + 0.587 * g + 0.114 * b;
+            buffer[i * width + j] = 0.299 * r + 0.587 * g + 0.114 * b;
         }
     }
+    get_data_from(buffer);
+    /*for (int i = 0; i < length; i++)
+	    std::cout << pixels[i] << " | ";
+    std::cout << std::endl;*/
 }
 
 __host__ gray8_image::gray8_image(int _sx, int _sy) {
@@ -63,6 +74,13 @@ __host__ gray8_image::~gray8_image() {
     if (rc)
         abortError("Fail buffer free in gray8_image");
     //delete [] pixels;
+}
+
+__host__ void gray8_image::get_data_from(double *input) {
+    std::cout << "Starting cudaMemcpy..." << std::endl;
+    cudaMemcpy(pixels, input, length * sizeof(double), cudaMemcpyHostToDevice);
+    //std::cout << "Starting synchronize..." << std::endl;
+    //cudaDeviceSynchronize();
 }
 
 __device__ double *&gray8_image::get_buffer() {

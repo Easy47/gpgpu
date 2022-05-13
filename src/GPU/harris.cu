@@ -6,27 +6,9 @@
 #include "image.hh"
 #include "harris_gpu.hh"
 
-void mgrid(int v11, int v12, int v21, int v22, gray8_image *t1, gray8_image *t2) {
-
-    int value1 = v11;
-    for (int i = 0; i < t1->sx; i++) {
-        for (int j = 0; j < t1->sy; j++) {
-            t1->pixels[i * t1->sx + j] = value1;
-        }
-        value1++;
-    }
-    for (int i = 0; i < t2->sx; i++) {
-        int value2 = v21;
-        for (int j = 0; j < t2->sy; j++) {
-            t2->pixels[i * t2->sx + j] = value2;
-            value2++;
-        }
-    }
-}
-
-void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image *gy) {
+__host__ void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image *gy) {
 	
-    float gx_tmp[49] = { 
+    double gx_tmp[49] = { 
 	0.000308397, 0.00263511, 0.00608749, -0, -0.00608749, -0.00263511, -0.000308397,
 	0.00395267, 0.0337738, 0.0780223, -0, -0.0780223, -0.0337738, -0.00395267,
 	0.0182625, 0.156045, 0.360485, -0, -0.360485, -0.156045, -0.0182625,
@@ -36,7 +18,7 @@ void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image 
 	0.000308397, 0.00263511, 0.00608749, -0, -0.00608749, -0.00263511, -0.000308397,
     };
 
-    float gy_tmp[49] = { 
+    double gy_tmp[49] = { 
 	0.000308397, 0.00395267, 0.0182625, 0.0304169, 0.0182625, 0.00395267, 0.000308397, 
 	0.00263511, 0.0337738, 0.156045, 0.259899, 0.156045, 0.0337738, 0.00263511, 
 	0.00608749, 0.0780223, 0.360485, 0.600404, 0.360485, 0.0780223, 0.00608749, 
@@ -46,15 +28,13 @@ void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image 
 	-0.000308397, -0.00395267, -0.0182625, -0.0304169, -0.0182625, -0.00395267, -0.000308397, 
     };
 
-    for(int i = 0; i < 49; i++) {
-	gx->pixels[i] = gx_tmp[i];
-	gy->pixels[i] = gy_tmp[i];
-    }
+    gx->get_data_from(gx_tmp);
+    gy->get_data_from(gy_tmp);
 }
 
-void gauss_kernel(int size, int sizey, gray8_image *res) {
+__host__ void gauss_kernel(int size, int sizey, gray8_image *res) {
 
-    float g_tmp[49] = { 
+    double g_tmp[49] = { 
 	0.000102799, 0.00131756, 0.00608749, 0.010139, 0.00608749, 0.00131756, 0.000102799, 
 	0.00131756, 0.0168869, 0.0780223, 0.12995, 0.0780223, 0.0168869, 0.00131756, 
 	0.00608749, 0.0780223, 0.360485, 0.600404, 0.360485, 0.0780223, 0.00608749, 
@@ -63,9 +43,7 @@ void gauss_kernel(int size, int sizey, gray8_image *res) {
 	0.00131756, 0.0168869, 0.0780223, 0.12995, 0.0780223, 0.0168869, 0.00131756, 
 	0.000102799, 0.00131756, 0.00608749, 0.010139, 0.00608749, 0.00131756, 0.000102799, 
     };
-    for(int i = 0; i < 49; i++) {
-	res->pixels[i] = g_tmp[i];
-    }
+    res->get_data_from(g_tmp);
 }
 
 void print_img(gray8_image *img){
@@ -154,7 +132,6 @@ gray8_image *compute_harris_response(gray8_image *img) {
     kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imy2->pixels, imy2->sx, imy2->sy, gauss->pixels, gauss->sx, Wyy->pixels); 
     //imy2->gray_convolution(gauss, Wyy);
 
-    // FAIS BUGGUER ?.? K?E¨?E¨?ER%.D?E??.RFP?. -------------------------------------------------------------------------------------*|*|*|*|
     cudaDeviceSynchronize();
 
 
@@ -184,11 +161,11 @@ gray8_image *compute_harris_response(gray8_image *img) {
     delete s2;
 
     //auto Wtr = new gray8_image(Wxx->sx, Wxx->sy);
+
     gray8_image *Wtr = new gray8_image(imx->sx, imx->sy);
-    //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+
     kvecAdd<<<dimBlock,dimGrid>>>(Wxx->pixels, Wyy->pixels, Wtr->pixels, imx->length); 
     cudaDeviceSynchronize();
-    //img_add(Wxx, Wyy, Wtr);
 
 
     gray8_image *tmp = new gray8_image(imx->sx, imx->sy);

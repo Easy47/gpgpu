@@ -203,7 +203,7 @@ gray8_image *compute_harris_response(gray8_image *img) {
     return res;
 
 }
-class Point {
+/*class Point {
     public:
     int x;
     int y;
@@ -213,7 +213,7 @@ class Point {
         this->y = y;
         this->val = val;
     }
-};
+};*/
 
 /*
 __device__ static float atomicMax(float *address, float val) {
@@ -241,17 +241,23 @@ __device__ static float atomicMin(float *address, float val) {
 
 __device__ int dev_count_d = 0;
 
-__device__ int my_push_back(double *harris, int **coord, double harris_val, int *coord_val, int length) {
+typedef struct
+{
+    int x, y;
+} Point;
+
+__device__ int my_push_back(double *harris, Point *coord, double harris_val, int *coord_val, int length) {
 	int insert_pt = atomicAdd(&dev_count_d, 1);
 	if (insert_pt < length) {
 		harris[insert_pt] = harris_val;
-		coord[insert_pt] = coord_val;
+		coord[insert_pt].x = coord_val[0];
+		coord[insert_pt].y = coord_val[1];
 		return insert_pt;
 	}
 	return -1;
 }
 
-__global__ void kvecComputeMask(double max, double min, double *img_pix, double *harris_pix, int harris_sx, int harris_sy, double *harris_vals, int **coord, float threshold) {
+__global__ void kvecComputeMask(double max, double min, double *img_pix, double *harris_pix, int harris_sx, int harris_sy, double *harris_vals, Point *coord, float threshold) {
     float rtol = 0.0001;
     float atol = 0.0000001;
     int x = blockDim.x * blockIdx.x + threadIdx.x;
@@ -269,7 +275,7 @@ __global__ void kvecComputeMask(double max, double min, double *img_pix, double 
 	}
 }
 
-int** compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
+Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
     std::vector<Point> res;
 	
 	thrust::device_vector<double> vec((double*)t2->pixels, (double*)(t2->pixels + t2->length));
@@ -277,10 +283,10 @@ int** compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
 	double min = *thrust::min_element(vec.begin(), vec.end());
 
 	double *harris_vals;
-	int **coord;
+	Point *coord;
 	int length = harris_resp->length;
     cudaMallocManaged(&harris_vals, sizeof(double) * length);
-    cudaMallocManaged(&coord, sizeof(int*) * length);
+    cudaMallocManaged(&coord, sizeof(Point) * length);
 
     dim3 dimBlockConvol(32, 32);
     dim3 dimGridConvol((harris_resp->sx + dimBlockConvol.x - 1)/dimBlockConvol.x, (harris_resp->sy + dimBlockConvol.y - 1)/dimBlockConvol.y);
@@ -304,19 +310,19 @@ int** compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
     }
 	*/
 
-	/*
+	
 	// print coords
-	for (int i = 0; i < dev_count; i++) {
-		std::cout << coord[i][0] << " " << coord[i][1] << std::endl;
-	}
-	*/
+	/*for (int i = 0; i < dev_count; i++) {
+		std::cout << coord[i].x << " " << coord[i].x << std::endl;
+	}*/
+	
 
 	double *sorted_harris_vals;
 	int **sorted_coord;
     cudaMallocManaged(&sorted_harris_vals, sizeof(double) * length);
     cudaMallocManaged(&sorted_coord, sizeof(int*) * length);
 
-	void *d_tmp_storage = NULL;
+	/*void *d_tmp_storage = NULL;
 	size_t tmp_storage_bytes = 0;
 	cub::DeviceRadixSort::SortPairs(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
 
@@ -331,11 +337,12 @@ int** compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
 	}
 
     // std::sort(candidate.begin(), candidate.end(), myfunction);
-	//TODO fix coords allocation
+	//TODO fix coords allocation*/
+	thrust::sort_by_key(harris_vals, harris_vals + dev_count, coord);
     return coord;
 }
 
-bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
+//bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
 
 
 std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
@@ -381,7 +388,7 @@ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoin
     cudaDeviceSynchronize();
 
     //gray8_image *mask = new gray8_image(image_gray->sx, image_gray->sy);
-	compute_mask(dilate, harris_resp, threshold);
+    Point *coord = compute_mask(dilate, harris_resp, threshold);
 
     std::vector<Point> res;
 	/*

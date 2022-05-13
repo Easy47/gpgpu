@@ -7,6 +7,7 @@
 #include "harris_gpu.hh"
 #include <thrust/extrema.h>
 #include <thrust/device_vector.h>
+#include <cub/cub.cuh>
 
 __host__ void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image *gy) {
 	
@@ -236,43 +237,61 @@ __device__ static float atomicMin(float *address, float val) {
 	} while (assumed != old);
 	return __int_as_float(old);
 }
-
-__global__ kvecComputeMask(float max, float min, double *img_pix, int harris_sx, int harris_sy, double *harris_vals, int *coord) {
-    int x = blockDim.x * blockIdx.x + threadIdx.x;
-    int y = blockDim.y * blockIdx.y + threadIdx.y;
-    if (x >= img_x)
-	return;
-    if (y >= img_y)
-	return;
-
-	if ((abs(harris_resp->pixels[i * harris_resp->sy + j] - t2->pixels[i * harris_resp->sy + j]) <= atol * rtol * abs(t2->pixels[i * harris_resp->sy + j])) 
-	&& (harris_resp->pixels[i * harris_resp->sy + j] > min + threshold * (max - min))) {
-		//mask->pixels[i * harris_resp->sy + j] = 1;
-		Point tmp = Point(i , j, harris_resp->pixels[i * harris_resp->sy + j]);
-		res.push_back(tmp);
-	} else {
-		mask->pixels[i * harris_resp->sy + j] = 0;
-	}
-}
 */
 
-std::vector<Point> compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
-    std::vector<Point> res;
+__device__ int dev_count_d = 0;
+
+__device__ int my_push_back(double *harris, int **coord, double harris_val, int *coord_val, int length) {
+	int insert_pt = atomicAdd(&dev_count_d, 1);
+	if (insert_pt < length) {
+		harris[insert_pt] = harris_val;
+		coord[insert_pt] = coord_val;
+		return insert_pt;
+	}
+	return -1;
+}
+
+__global__ void kvecComputeMask(double max, double min, double *img_pix, double *harris_pix, int harris_sx, int harris_sy, double *harris_vals, int **coord, float threshold) {
     float rtol = 0.0001;
     float atol = 0.0000001;
+    int x = blockDim.x * blockIdx.x + threadIdx.x;
+    int y = blockDim.y * blockIdx.y + threadIdx.y;
+    if (x >= harris_sx)
+	return;
+    if (y >= harris_sy)
+	return;
+
+	if ((abs(harris_pix[x * harris_sy + y] - img_pix[x * harris_sy + y]) <= atol * rtol * abs(img_pix[x * harris_sy + y])) 
+	&& (harris_pix[x * harris_sy + y] > min + threshold * (max - min))) {
+		// Point tmp = Point(i , j, harris_resp->pixels[i * harris_resp->sy + j]);
+		int coord_val[2] = {x, y};
+		my_push_back(harris_vals, coord, harris_pix[x * harris_sy + y], coord_val, harris_sx * harris_sy);
+	}
+}
+
+int** compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
+    std::vector<Point> res;
 	
 	thrust::device_vector<double> vec((double*)t2->pixels, (double*)(t2->pixels + t2->length));
-	float maxt = *thrust::max_element(vec.begin(), vec.end());
-	float mint = *thrust::min_element(vec.begin(), vec.end());
+	double max = *thrust::max_element(vec.begin(), vec.end());
+	double min = *thrust::min_element(vec.begin(), vec.end());
 
-    float min = t2->min();
-    float max = t2->max();
-	std::cout << "thrust max: " << maxt << std::endl;
-	std::cout << "thrust min: " << mint << std::endl;
+	double *harris_vals;
+	int **coord;
+	int length = harris_resp->length;
+    cudaMallocManaged(&harris_vals, sizeof(double) * length);
+    cudaMallocManaged(&coord, sizeof(int*) * length);
 
-	std::cout << "max: " << max << std::endl;
-	std::cout << "min: " << min << std::endl;
+    dim3 dimBlockConvol(32, 32);
+    dim3 dimGridConvol((harris_resp->sx + dimBlockConvol.x - 1)/dimBlockConvol.x, (harris_resp->sy + dimBlockConvol.y - 1)/dimBlockConvol.y);
 
+	kvecComputeMask<<<dimBlockConvol, dimGridConvol>>>(max, min, t2->pixels, harris_resp->pixels, harris_resp->sx, harris_resp->sy, harris_vals, coord, threshold);
+	cudaDeviceSynchronize();
+
+	int dev_count;
+	cudaMemcpyFromSymbol(&dev_count, dev_count_d, sizeof(dev_count_d), 0, cudaMemcpyDeviceToHost);
+
+	/*
     for (int i = 0; i < harris_resp->sx; i++) {
         for (int j = 0; j < harris_resp->sy; j++) {
             if ((abs(harris_resp->pixels[i * harris_resp->sy + j] - t2->pixels[i * harris_resp->sy + j]) <= atol * rtol * abs(t2->pixels[i * harris_resp->sy + j])) 
@@ -280,12 +299,30 @@ std::vector<Point> compute_mask(gray8_image *harris_resp, gray8_image *t2, float
                 //mask->pixels[i * harris_resp->sy + j] = 1;
                 Point tmp = Point(i , j, harris_resp->pixels[i * harris_resp->sy + j]);
                 res.push_back(tmp);
-            }/* else {
-                mask->pixels[i * harris_resp->sy + j] = 0;
-            }*/
+            }
         }
     }
-    return res;
+	*/
+
+	for (int i = 0; i < dev_count; i++) {
+		std::cout << coord[i][0] << " " << coord[i][1] << std::endl;
+	}
+
+	double *sorted_harris_vals;
+	int **sorted_coord;
+    cudaMallocManaged(&sorted_harris_vals, sizeof(double) * length);
+    cudaMallocManaged(&sorted_coord, sizeof(int*) * length);
+
+	void *d_tmp_storage = NULL;
+	size_t tmp_storage_bytes = 0;
+	cub::DeviceRadixSort::SortPairs(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
+
+	cudaMallocManaged(&d_tmp_storage, tmp_storage_bytes);
+
+	cub::DeviceRadixSort::SortPairs(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
+    // std::sort(candidate.begin(), candidate.end(), myfunction);
+	//TODO fix coords allocation / sort
+    return coord;
 }
 
 bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
@@ -334,10 +371,10 @@ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoin
     cudaDeviceSynchronize();
 
     //gray8_image *mask = new gray8_image(image_gray->sx, image_gray->sy);
-    std::vector<Point> candidate = compute_mask(dilate, harris_resp, threshold);
-    std::sort(candidate.begin(), candidate.end(), myfunction);
+	compute_mask(dilate, harris_resp, threshold);
 
     std::vector<Point> res;
+	/*
     int nb = 0;
     for (auto i = candidate.begin(); i != candidate.end(); i++) {
         if (nb == max_keypoints) {
@@ -346,6 +383,7 @@ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoin
         nb++;
         res.push_back(*i);
     }
+	*/
     delete harris_resp;
     delete ellipse_kernel;
     delete dilate;

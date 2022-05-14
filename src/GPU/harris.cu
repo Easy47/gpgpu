@@ -9,6 +9,9 @@
 #include <thrust/device_vector.h>
 #include <cub/cub.cuh>
 
+using namespace ImageGpu;
+
+namespace gpu {
 __host__ void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image *gy) {
 	
     double gx_tmp[49] = { 
@@ -412,4 +415,5 @@ void detect_point(PNG_data image_data) {
         std::cout << (*i).x << " " << (*i).y << std::endl;
     }
     delete test;
+}
 }

@@ -6,6 +6,8 @@
 //#include <CLI/CLI.hpp>
 //#include <spdlog/spdlog.h>
 #include "GPU/harris_gpu.hh"
+#include "CPU/harris_cpu.hh"
+#include "png/png_handler.hh"
 
 // Usage: ./mandel
 int main(int argc, char** argv)
@@ -14,7 +16,7 @@ int main(int argc, char** argv)
   (void) argv;
 
   char filename[] = "../img/b001.png";
-  char mode[] = "CPU";
+  char mode[] = "GPU";
 /*
 
   CLI::App app{"harris"};
@@ -24,15 +26,16 @@ int main(int argc, char** argv)
 
   CLI11_PARSE(app, argc, argv);*/
 
-
-  //if (mode == "CPU") {
   PNG_data image_data = read_png_file(filename);
-  detect_point(image_data);
-  //}
-  /*else if (mode == "GPU")
+
+  if (mode == "CPU") {
+	detect_point(image_data);
+  }
+  else if (mode == "GPU")
   {
-    render(reinterpret_cast<char*>(buffer.get()), width, height, stride, niter);
-  }*/
+    // render(reinterpret_cast<char*>(buffer.get()), width, height, stride, niter);
+	gpu::detect_point(image_data);
+  }
 
   // Save
   //write_png(buffer.get(), width, height, stride, filename.c_str());

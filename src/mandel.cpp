@@ -16,7 +16,7 @@ int main(int argc, char** argv)
   (void) argv;
 
   char filename[] = "../img/b001.png";
-  char mode[] = "GPU";
+  char mode[] = "CPU";
 /*
 
   CLI::App app{"harris"};
@@ -26,16 +26,15 @@ int main(int argc, char** argv)
 
   CLI11_PARSE(app, argc, argv);*/
 
-  PNG_data image_data = read_png_file(filename);
 
-  if (mode == "CPU") {
-	detect_point(image_data);
-  }
-  else if (mode == "GPU")
+  //if (mode == "CPU") {
+  PNG_data image_data = read_png_file(filename);
+  gpu::detect_point(image_data);
+  //}
+  /*else if (mode == "GPU")
   {
-    // render(reinterpret_cast<char*>(buffer.get()), width, height, stride, niter);
-	gpu::detect_point(image_data);
-  }
+    render(reinterpret_cast<char*>(buffer.get()), width, height, stride, niter);
+  }*/
 
   // Save
   //write_png(buffer.get(), width, height, stride, filename.c_str());

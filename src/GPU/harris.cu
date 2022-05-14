@@ -93,50 +93,40 @@ gray8_image *compute_harris_response(gray8_image *img) {
     gauss_kernel(OPENING_SIZE, OPENING_SIZE, gauss);
 
     gray8_image *imx2 = new gray8_image(imx->sx, imx->sy);
-    //dim3 dimBlock(1024);
-    //dim3 dimGrid((imx->length + dimBlock.x - 1)/dimBlock.x);
+    gray8_image *Wxx = new gray8_image(imx2->sx, imx2->sy);
+
+    gray8_image *imximy = new gray8_image(imx->sx, imx->sy);
+    auto Wxy = new gray8_image(imximy->sx, imximy->sy);
+
+    gray8_image *imy2 = new gray8_image(imx->sx, imx->sy);
+    auto Wyy = new gray8_image(imy2->sx, imy2->sy);
+	
     int dimBlock = (1024);
     int dimGrid = ((imx->length + dimBlock - 1)/dimBlock);
-
-    kvecMult<<<dimBlock,dimGrid>>>(imx->pixels, imx->pixels, imx2->pixels, imx->length); 
-    cudaDeviceSynchronize();
-
-    //std::cout << imx->sx << " * " << imx->sy << std::endl;
-    //gray8_image *imx2 = img_mult(imx, imx);
     dim3 dimBlockConvol(32, 32);
     dim3 dimGridConvol((imx->sx + dimBlockConvol.x - 1)/dimBlockConvol.x, (imx->sy + dimBlockConvol.y - 1)/dimBlockConvol.y);
 
-    gray8_image *Wxx = new gray8_image(imx2->sx, imx2->sy);
-    kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imx2->pixels, imx2->sx, imx2->sy, gauss->pixels, gauss->sx, Wxx->pixels); 
-    //imx2->gray_convolution(gauss, Wxx);
+    gray8_image *gauss1 = new gray8_image(2*OPENING_SIZE + 1, 2*OPENING_SIZE + 1);
+    gauss_kernel(OPENING_SIZE, OPENING_SIZE, gauss1);
+    gray8_image *gauss2 = new gray8_image(2*OPENING_SIZE + 1, 2*OPENING_SIZE + 1);
+    gauss_kernel(OPENING_SIZE, OPENING_SIZE, gauss2);
 
+    cudaStream_t stream1, stream2, stream3;
+    cudaStreamCreate ( &stream1);
+    cudaStreamCreate ( &stream2);
+    cudaStreamCreate ( &stream3);
 
-    gray8_image *imximy = new gray8_image(imx->sx, imx->sy);
-    //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
-    kvecMult<<<dimBlock,dimGrid>>>(imx->pixels, imy->pixels, imximy->pixels, imx->length); 
-    cudaDeviceSynchronize();
-    //gray8_image *imximy = img_mult(imx, imy);   
-
-
-    auto Wxy = new gray8_image(imximy->sx, imximy->sy);
-
-    kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imximy->pixels, imximy->sx, imximy->sy, gauss->pixels, gauss->sx, Wxy->pixels); 
-    //imximy->gray_convolution(gauss, Wxy);
-
-
-    gray8_image *imy2 = new gray8_image(imx->sx, imx->sy);
-    //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
+    kvecMult<<<dimBlock,dimGrid>>>(imx->pixels, imx->pixels, imx2->pixels, imx->length); 
+    kvecMult<<<dimBlock,dimGrid>>>(imx->pixels, imy->pixels, imximy->pixels, imx->length);  
     kvecMult<<<dimBlock,dimGrid>>>(imy->pixels, imy->pixels, imy2->pixels, imx->length); 
+
+    kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imx2->pixels, imx2->sx, imx2->sy, gauss->pixels, gauss->sx, Wxx->pixels); 
+
+    kvecConvol<<<dimBlockConvol,dimGridConvol, 0, stream1>>>(imximy->pixels, imximy->sx, imximy->sy, gauss1->pixels, gauss1->sx, Wxy->pixels); 
+
+    kvecConvol<<<dimBlockConvol,dimGridConvol, 0, stream2>>>(imy2->pixels, imy2->sx, imy2->sy, gauss2->pixels, gauss2->sx, Wyy->pixels); 
+
     cudaDeviceSynchronize();
-    //gray8_image *imy2 = img_mult(imy, imy);
-
-
-    auto Wyy = new gray8_image(imy2->sx, imy2->sy);
-    kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imy2->pixels, imy2->sx, imy2->sy, gauss->pixels, gauss->sx, Wyy->pixels); 
-    //imy2->gray_convolution(gauss, Wyy);
-
-    cudaDeviceSynchronize();
-
 
     gray8_image *s1 = new gray8_image(imx->sx, imx->sy);
     //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
@@ -389,6 +379,10 @@ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoin
 
     //gray8_image *mask = new gray8_image(image_gray->sx, image_gray->sy);
     Point *coord = compute_mask(dilate, harris_resp, threshold);
+	for (int i = 0; i < 30; i++) {
+		std::cout << coord[i].x << " " << coord[i].y << std::endl;
+	}
+
 
     std::vector<Point> res;
 	/*

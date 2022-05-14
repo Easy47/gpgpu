@@ -6,6 +6,8 @@
 //#include <CLI/CLI.hpp>
 //#include <spdlog/spdlog.h>
 #include "GPU/harris_gpu.hh"
+#include "CPU/harris_cpu.hh"
+#include "png/png_handler.hh"
 
 // Usage: ./mandel
 int main(int argc, char** argv)
@@ -27,7 +29,7 @@ int main(int argc, char** argv)
 
   //if (mode == "CPU") {
   PNG_data image_data = read_png_file(filename);
-  detect_point(image_data);
+  gpu::detect_point(image_data);
   //}
   /*else if (mode == "GPU")
   {

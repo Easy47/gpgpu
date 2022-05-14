@@ -1,7 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <memory>
-#include "png_handler.hh"
+#include "../png/png_handler.hh"
 
 /// \param buffer The RGBA24 image buffer
 /// \param width Image width

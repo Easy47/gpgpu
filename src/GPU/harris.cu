@@ -120,11 +120,11 @@ gray8_image *compute_harris_response(gray8_image *img) {
     cudaStreamCreate ( &stream2);
     cudaStreamCreate ( &stream3);
 
-    kvecMult<<<dimBlock,dimGrid>>>(imx->pixels, imx->pixels, imx2->pixels, imx->length); 
+    kvecMult<<<dimBlock,dimGrid, 0, stream3>>>(imx->pixels, imx->pixels, imx2->pixels, imx->length); 
     kvecMult<<<dimBlock,dimGrid, 0, stream1>>>(imx_stream->pixels, imy->pixels, imximy->pixels, imx->length);  
     kvecMult<<<dimBlock,dimGrid, 0, stream2>>>(imy_stream->pixels, imy_stream->pixels, imy2->pixels, imx->length); 
 
-    kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imx2->pixels, imx2->sx, imx2->sy, gauss->pixels, gauss->sx, Wxx->pixels); 
+    kvecConvol<<<dimBlockConvol,dimGridConvol, 0, stream3>>>(imx2->pixels, imx2->sx, imx2->sy, gauss->pixels, gauss->sx, Wxx->pixels); 
 
     kvecConvol<<<dimBlockConvol,dimGridConvol, 0, stream1>>>(imximy->pixels, imximy->sx, imximy->sy, gauss1->pixels, gauss1->sx, Wxy->pixels); 
 

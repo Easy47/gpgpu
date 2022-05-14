@@ -322,8 +322,10 @@ void detect_point(PNG_data image_data) {
         }
     }*/
     std::vector<Point> res = detect_harris_points(test, 30, 25, 0.1);
+	/*
     for (auto i = res.begin(); i != res.end(); i++) {
         std::cout << (*i).x << " " << (*i).y << std::endl;
     }
+	*/
     delete test;
 }

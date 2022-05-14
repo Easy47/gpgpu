@@ -272,7 +272,7 @@ __global__ void kvecComputeMask(double max, double min, double *img_pix, double 
 	}
 }
 
-Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) {
+Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold, int &point_nb) {
     std::vector<Point> res;
 	
 	thrust::device_vector<double> vec((double*)t2->pixels, (double*)(t2->pixels + t2->length));
@@ -314,6 +314,8 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) 
 	}*/
 	
 
+	point_nb = dev_count;
+
 	double *sorted_harris_vals;
 	int **sorted_coord;
     cudaMallocManaged(&sorted_harris_vals, sizeof(double) * length);
@@ -341,8 +343,7 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold) 
 
 //bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
 
-
-std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
+Point *detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
 
     gray8_image *harris_resp = compute_harris_response(image_gray);
     double tmp[625] = { 
@@ -385,13 +386,17 @@ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoin
     cudaDeviceSynchronize();
 
     //gray8_image *mask = new gray8_image(image_gray->sx, image_gray->sy);
-    Point *coord = compute_mask(dilate, harris_resp, threshold);
+	int point_nb;
+    Point *coord = compute_mask(dilate, harris_resp, threshold, point_nb);
+	/*
 	for (int i = 0; i < 30; i++) {
 		std::cout << coord[i].x << " " << coord[i].y << std::endl;
 	}
+	*/
 
-
-    std::vector<Point> res;
+	int length = point_nb < max_keypoints ? point_nb : max_keypoints;
+	Point *res = (Point*) malloc(sizeof(Point) * length);
+	cudaMemcpy(res, coord, sizeof(Point) * length, cudaMemcpyDeviceToHost);
 	/*
     int nb = 0;
     for (auto i = candidate.begin(); i != candidate.end(); i++) {
@@ -406,18 +411,19 @@ std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoin
     delete ellipse_kernel;
     delete dilate;
     return res;
-
 }
 
 void detect_point(PNG_data image_data) {
     std::cout << "started" << std::endl;
     gray8_image *test = new gray8_image(image_data.height, image_data.width, image_data.row_pointers);
     std::cout << "grayscale image\n";
-    std::vector<Point> res = detect_harris_points(test, 30, 25, 0.1);
+    Point *res = detect_harris_points(test, 30, 25, 0.1);
     //std::cout << res.size();
+	/*
     for (auto i = res.begin(); i != res.end(); i++) {
-        std::cout << (*i).x << " " << (*i).y << std::endl;
+        std::cout << i.x << " " << i.y << std::endl;
     }
+	*/
     delete test;
 }
 }

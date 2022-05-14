@@ -114,14 +114,18 @@ gray8_image *compute_harris_response(gray8_image *img) {
     gray8_image *gauss2 = new gray8_image(2*OPENING_SIZE + 1, 2*OPENING_SIZE + 1);
     gauss_kernel(OPENING_SIZE, OPENING_SIZE, gauss2);
 
+    gray8_image *imx_stream = new gray8_image(img->sx, img->sy);
+    gray8_image *imy_stream = new gray8_image(img->sx, img->sy);
+    gauss_derivatives(img, DERIVATIVE_KERNEL_SIZE, imx_stream, imy_stream);
+
     cudaStream_t stream1, stream2, stream3;
     cudaStreamCreate ( &stream1);
     cudaStreamCreate ( &stream2);
     cudaStreamCreate ( &stream3);
 
     kvecMult<<<dimBlock,dimGrid>>>(imx->pixels, imx->pixels, imx2->pixels, imx->length); 
-    kvecMult<<<dimBlock,dimGrid>>>(imx->pixels, imy->pixels, imximy->pixels, imx->length);  
-    kvecMult<<<dimBlock,dimGrid>>>(imy->pixels, imy->pixels, imy2->pixels, imx->length); 
+    kvecMult<<<dimBlock,dimGrid, 0, stream1>>>(imx_stream->pixels, imy->pixels, imximy->pixels, imx->length);  
+    kvecMult<<<dimBlock,dimGrid, 0, stream2>>>(imy_stream->pixels, imy_stream->pixels, imy2->pixels, imx->length); 
 
     kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imx2->pixels, imx2->sx, imx2->sy, gauss->pixels, gauss->sx, Wxx->pixels); 
 

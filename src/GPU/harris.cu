@@ -120,7 +120,7 @@ gray8_image *compute_harris_response(gray8_image *img) {
     kvecMult<<<dimBlock,dimGrid>>>(imx->pixels, imy->pixels, imximy->pixels, imx->length);  
     kvecMult<<<dimBlock,dimGrid>>>(imy->pixels, imy->pixels, imy2->pixels, imx->length); 
 
-    kvecConvol<<<dimBlockConvol,dimGridConvol>>>(imx2->pixels, imx2->sx, imx2->sy, gauss->pixels, gauss->sx, Wxx->pixels); 
+    kvecConvol<<<dimBlockConvol,dimGridConvol, 0, stream3>>>(imx2->pixels, imx2->sx, imx2->sy, gauss->pixels, gauss->sx, Wxx->pixels); 
 
     kvecConvol<<<dimBlockConvol,dimGridConvol, 0, stream1>>>(imximy->pixels, imximy->sx, imximy->sy, gauss1->pixels, gauss1->sx, Wxy->pixels); 
 

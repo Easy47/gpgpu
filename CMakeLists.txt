@@ -81,9 +81,9 @@ target_compile_features(harris PUBLIC cxx_std_17)
 target_link_libraries(harris PRIVATE ${PNG_LIBRARY} CLI11::CLI11 spdlog::spdlog)# renderer)
 set_target_properties(harris PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
-add_executable(bench src/mandel.cpp ${all_SRCS})
+add_executable(bench src/bench.cpp ${all_SRCS})
 target_compile_features(bench PUBLIC cxx_std_17)
-target_link_libraries(bench PRIVATE ${PNG_LIBRARY} spdlog::spdlog benchmark)# renderer)
+target_link_libraries(bench PRIVATE ${PNG_LIBRARY} spdlog::spdlog benchmark::benchmark)# renderer)
 set_target_properties(bench PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 

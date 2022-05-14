@@ -1,15 +1,18 @@
-#include "harris_cpu.hpp"
+#include "CPU/harris_cpu.hh"
 #include <vector>
 #include <benchmark/benchmark.h>
+#include <iostream>
 
 
 void BM_Rendering_cpu(benchmark::State& st)
 {
+   std::cout << "Benchmark starting..." << std::endl;
   //int stride = width * kRGBASize;
   //std::vector<char> data(height * stride);
-  char filename[] = "img/b001.png";
+  char filename[] = "../img/b001.png";
+  PNG_data image_data = read_png_file(filename);
   for (auto _ : st)
-    detect_point(filename);
+    detect_point(image_data);
 
   //st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
 }

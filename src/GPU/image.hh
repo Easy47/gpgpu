@@ -2,6 +2,7 @@
 //TIFO
 #include <png.h>
 
+namespace ImageGpu {
 class gray8_image {
 
   public:
@@ -27,7 +28,7 @@ class gray8_image {
              * @return the pixel buffer.
              */
             double*& get_buffer();
-	    void get_data_from(double *input);
+			void get_data_from(double *input);
 
             //void gray_convolution(gray8_image* masque, gray8_image *res_img);
             gray8_image *dilate(gray8_image* masque);
@@ -52,3 +53,4 @@ __global__ void kvecSous(double *img1, double *img2, double *res_img, int lgt);
 __global__ void kvecAddScalar(double *img1, int value, double *res_img, int lgt);
 __global__ void kvecConvol(double *img, int img_x, int img_y, double *mask, int msk_size, double *res_img);
 __global__ void kvecDilate(double *img, int img_x, int img_y, double *mask, int msk_size, double *res_img);
+}

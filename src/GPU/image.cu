@@ -13,6 +13,8 @@
  }                                                                 \
 }
 
+namespace ImageGpu {
+
 [[gnu::noinline]]
 void _abortError(const char* msg, const char* fname, int line)
 {
@@ -285,4 +287,5 @@ float gray8_image::min() {
         }
     }
     return res;
+}
 }

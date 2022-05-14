@@ -74,7 +74,7 @@ find_package(PNG REQUIRED)
 include_directories(${PNG_INCLUDE_DIR})
 
 include_directories(src)
-file(GLOB all_SRCS "src/GPU/*")
+file(GLOB all_SRCS "src/GPU/*" "src/CPU/*" "src/png/*")
 
 add_executable(harris src/mandel.cpp ${all_SRCS})
 target_compile_features(harris PUBLIC cxx_std_17)

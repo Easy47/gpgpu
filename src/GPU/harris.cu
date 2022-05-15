@@ -1,4 +1,5 @@
-#include <iostream> 
+#include <iostream>
+#include <fstream>
 #include <cmath>
 #include <cstddef>
 #include <algorithm>
@@ -343,7 +344,7 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold, 
 
 //bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
 
-Point *detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
+Point *detect_harris_points(gray8_image *image_gray, int &max_keypoints, int min_distance = 25, float threshold = 0.1) {
 
     gray8_image *harris_resp = compute_harris_response(image_gray);
     double tmp[625] = { 
@@ -394,9 +395,9 @@ Point *detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int
 	}
 	*/
 
-	int length = point_nb < max_keypoints ? point_nb : max_keypoints;
-	Point *res = (Point*) malloc(sizeof(Point) * length);
-	cudaMemcpy(res, coord, sizeof(Point) * length, cudaMemcpyDeviceToHost);
+	max_keypoints = point_nb < max_keypoints ? point_nb : max_keypoints;
+	Point *res = (Point*) malloc(sizeof(Point) * max_keypoints);
+	cudaMemcpy(res, coord, sizeof(Point) * max_keypoints, cudaMemcpyDeviceToHost);
 	/*
     int nb = 0;
     for (auto i = candidate.begin(); i != candidate.end(); i++) {
@@ -417,13 +418,14 @@ void detect_point(PNG_data image_data) {
     //std::cout << "started" << std::endl;
     gray8_image *test = new gray8_image(image_data.height, image_data.width, image_data.row_pointers);
     //std::cout << "grayscale image\n";
-    Point *res = detect_harris_points(test, 30, 25, 0.1);
+	int max_keypoints = 2000;
+    Point *res = detect_harris_points(test, max_keypoints, 25, 0.1);
     //std::cout << res.size();
-	/*
-    for (auto i = res.begin(); i != res.end(); i++) {
-        std::cout << i.x << " " << i.y << std::endl;
+	std::ofstream file;
+	file.open("gpu_keypoints.txt", std::ios::out);
+    for (auto i = 0; i < max_keypoints; i++) {
+        file << res[i].x << " " << res[i].y << std::endl;
     }
-	*/
     delete test;
 }
 }

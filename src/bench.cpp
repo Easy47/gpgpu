@@ -15,17 +15,18 @@ void BM_Rendering_cpu(benchmark::State& st)
    std::cout << "Benchmark starting..." << std::endl;
   //int stride = width * kRGBASize;
   //std::vector<char> data(height * stride);
+  int nb_keypoints;
   for (auto _ : st)
-	detect_point(image_data);
+	detect_point(image_data, nb_keypoints);
 
   //st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
 }
 
 void BM_Rendering_gpu(benchmark::State& st)
 {
-	for (auto _ : st) {
-		gpu::detect_point(image_data);
-	}
+  int nb_keypoints;
+  for (auto _ : st)
+	gpu::detect_point(image_data, nb_keypoints);
 
   //st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
 }

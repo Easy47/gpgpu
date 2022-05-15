@@ -11,6 +11,11 @@
 ///                     belongs to the mandelbrot set.
 //extern "C"
 namespace gpu {
+	typedef struct
+	{
+		int x, y;
+	} Point;
+
 	void detect_point(PNG_data image_data);
 }
 

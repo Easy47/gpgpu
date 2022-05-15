@@ -134,23 +134,20 @@ gray8_image *compute_harris_response(gray8_image *img) {
 
     kvecConvol<<<dimBlockConvol,dimGridConvol, 0, stream2>>>(imy2->pixels, imy2->sx, imy2->sy, gauss2->pixels, gauss2->sx, Wyy->pixels); 
 
-    cudaDeviceSynchronize();
-
     gray8_image *s1 = new gray8_image(imx->sx, imx->sy);
-    //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
-    kvecMult<<<dimBlock,dimGrid>>>(Wxx->pixels, Wyy->pixels, s1->pixels, imx->length); 
     cudaDeviceSynchronize();
+    kvecMult<<<dimBlock,dimGrid>>>(Wxx->pixels, Wyy->pixels, s1->pixels, imx->length); 
+    //cudaDeviceSynchronize();
     //auto s1 = img_mult(Wxx, Wyy);
 
 
     gray8_image *s2 = new gray8_image(imx->sx, imx->sy);
     //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
     kvecMult<<<dimBlock,dimGrid>>>(Wxy->pixels, Wxy->pixels, s2->pixels, imx->length); 
-    cudaDeviceSynchronize();
     //auto s2 = img_mult(Wxy, Wxy);
 
-
     gray8_image *Wdet = new gray8_image(imx->sx, imx->sy);
+    cudaDeviceSynchronize();
     //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
     kvecSous<<<dimBlock,dimGrid>>>(s1->pixels, s2->pixels, Wdet->pixels, imx->length); 
 
@@ -166,16 +163,15 @@ gray8_image *compute_harris_response(gray8_image *img) {
     gray8_image *Wtr = new gray8_image(imx->sx, imx->sy);
 
     kvecAdd<<<dimBlock,dimGrid>>>(Wxx->pixels, Wyy->pixels, Wtr->pixels, imx->length); 
-    cudaDeviceSynchronize();
-
 
     gray8_image *tmp = new gray8_image(imx->sx, imx->sy);
+    cudaDeviceSynchronize();
     //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
     kvecAddScalar<<<dimBlock,dimGrid>>>(Wtr->pixels, 1, tmp->pixels, imx->length); 
-    cudaDeviceSynchronize();
     //gray8_image *tmp = img_add_scalar(Wtr, 1);
 
     gray8_image *res = new gray8_image(imx->sx, imx->sy);
+    cudaDeviceSynchronize();
     //dim3 dimGrid((imx->sx + dimBlock.x - 1)/dimBlock.x, (imx->sy + dimBlock.y - 1)/dimBlock.y);
     kvecDiv<<<dimBlock,dimGrid>>>(Wdet->pixels, tmp->pixels, res->pixels, imx->length); 
     cudaDeviceSynchronize();
@@ -238,11 +234,6 @@ __device__ static float atomicMin(float *address, float val) {
 */
 
 __device__ int dev_count_d = 0;
-
-typedef struct
-{
-    int x, y;
-} Point;
 
 __device__ int my_push_back(double *harris, Point *coord, double harris_val, int *coord_val, int length) {
 	int insert_pt = atomicAdd(&dev_count_d, 1);
@@ -420,12 +411,12 @@ void detect_point(PNG_data image_data) {
     //std::cout << "grayscale image\n";
 	int max_keypoints = 2000;
     Point *res = detect_harris_points(test, max_keypoints, 25, 0.1);
-    //std::cout << res.size();
 	std::ofstream file;
 	file.open("gpu_keypoints.txt", std::ios::out);
     for (auto i = 0; i < max_keypoints; i++) {
         file << res[i].x << " " << res[i].y << std::endl;
     }
+    //std::cout << res.size();
     delete test;
 }
 }

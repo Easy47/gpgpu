@@ -158,11 +158,24 @@ __global__ void kvecDilate(double *img, int img_x, int img_y, double *mask, int 
     int x = blockDim.x * blockIdx.x + threadIdx.x;
     int y = blockDim.y * blockIdx.y + threadIdx.y;
     if (x >= img_x)
-	return;
+        return;
     if (y >= img_y)
-	return;
-    //printf("x: %d, y: %d | index = %d\n", x, y, x * img_y + y);
+        return;
 
+    int tIdX = threadIdx.x;
+    int tIdY = threadIdx.y;
+    __shared__ double maskShared[625];
+    if (tIdX * 25 + tIdY < 625) {
+        maskShared[tIdX * 25 + tIdY] = mask[tIdX * 25 + tIdY];
+    }
+    __shared__ double imgShared[1024];
+    imgShared[tIdX * 32 + tIdY] = img[x * img_y + y];
+    __syncthreads();
+
+    int tileStartX = blockDim.x * blockIdx.x;
+    int tileEndX = (blockDim.x + 1) * blockIdx.x;
+    int tileStartY = blockDim.y * blockIdx.y;
+    int tileEndY = (blockDim.y + 1) * blockIdx.y;
     int index = (msk_size - 1) / 2;
     double max = img[x * img_y + y];
     for (int i = -index; i <= index; i++) {
@@ -175,11 +188,18 @@ __global__ void kvecDilate(double *img, int img_x, int img_y, double *mask, int 
             }
 
             double m = mask[(i + index) * msk_size + (j + index)];
-	    if (m == 0)
-		continue;
-            double n = img[(x + i) * img_y + (y + j)];
-	    if (n > max)
-		max = n;
+            if (m == 0) {
+                continue
+            }
+            double n;
+            if ((x + i) > tileStartX && (x + i) < tileEndX && (y + j) > tileStartY && (y + j) < tileEndY) {
+                n = imgShared[(tIdX + i) * 32 + (tIdY + j)];
+            }
+            else {
+                n = img[(x + i) * img_y + (y + j)];
+            }
+            if (n > max)
+                max = n;
         }
     }
     res_img[x * img_y + y] = max;

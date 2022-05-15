@@ -58,7 +58,7 @@ __host__ gray8_image::gray8_image(int _sx, int _sy) {
     this->sy = _sy;
 
     this->length = sx * sy;
-    auto rc = cudaMallocManaged(&pixels, sizeof(double) * length);
+    auto rc = cudaMallocManaged(&pixels, sizeof(double) * length);//new double[length];
     if (rc)
         abortError("Fail buffer allocation in gray8_image");
 }
@@ -161,7 +161,6 @@ __global__ void kvecDilate(double *img, int img_x, int img_y, double *mask, int 
 	return;
     if (y >= img_y)
 	return;
-    //printf("x: %d, y: %d | index = %d\n", x, y, x * img_y + y);
 
     int index = (msk_size - 1) / 2;
     double max = img[x * img_y + y];

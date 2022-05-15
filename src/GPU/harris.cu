@@ -414,9 +414,9 @@ Point *detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int
 }
 
 void detect_point(PNG_data image_data) {
-    std::cout << "started" << std::endl;
+    //std::cout << "started" << std::endl;
     gray8_image *test = new gray8_image(image_data.height, image_data.width, image_data.row_pointers);
-    std::cout << "grayscale image\n";
+    //std::cout << "grayscale image\n";
     Point *res = detect_harris_points(test, 30, 25, 0.1);
     //std::cout << res.size();
 	/*

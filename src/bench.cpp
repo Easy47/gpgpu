@@ -2,6 +2,8 @@
 #include <vector>
 #include <benchmark/benchmark.h>
 #include <iostream>
+#include <chrono>
+#include <thread>
 #include "GPU/harris_gpu.hh"
 #include "CPU/harris_cpu.hh"
 
@@ -21,18 +23,21 @@ void BM_Rendering_cpu(benchmark::State& st)
 
 void BM_Rendering_gpu(benchmark::State& st)
 {
-  for (auto _ : st)
-	gpu::detect_point(image_data);
+	for (auto _ : st) {
+		gpu::detect_point(image_data);
+	}
 
   //st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
 }
 
 BENCHMARK(BM_Rendering_cpu)
 ->Unit(benchmark::kMillisecond)
+->MinTime(2)
 ->UseRealTime();
 
 BENCHMARK(BM_Rendering_gpu)
 ->Unit(benchmark::kMillisecond)
+->MinTime(2)
 ->UseRealTime();
 
 BENCHMARK_MAIN();

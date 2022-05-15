@@ -309,17 +309,17 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold, 
 	point_nb = dev_count;
 
 	double *sorted_harris_vals;
-	int **sorted_coord;
+	Point *sorted_coord;
     cudaMallocManaged(&sorted_harris_vals, sizeof(double) * length);
-    cudaMallocManaged(&sorted_coord, sizeof(int*) * length);
+    cudaMallocManaged(&sorted_coord, sizeof(Point) * length);
 
-	/*void *d_tmp_storage = NULL;
+	void *d_tmp_storage = NULL;
 	size_t tmp_storage_bytes = 0;
-	cub::DeviceRadixSort::SortPairs(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
+	cub::DeviceRadixSort::SortPairsDescending(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
 
 	cudaMallocManaged(&d_tmp_storage, tmp_storage_bytes);
 
-	cub::DeviceRadixSort::SortPairs(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
+	cub::DeviceRadixSort::SortPairsDescending(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
 
 	cudaDeviceSynchronize();
 
@@ -328,9 +328,8 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold, 
 	}
 
     // std::sort(candidate.begin(), candidate.end(), myfunction);
-	//TODO fix coords allocation*/
-	thrust::sort_by_key(harris_vals, harris_vals + dev_count, coord);
-    return coord;
+	// thrust::sort_by_key(harris_vals, harris_vals + dev_count, coord);
+    return sorted_coord;
 }
 
 //bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }

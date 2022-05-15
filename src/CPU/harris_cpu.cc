@@ -253,7 +253,7 @@ std::vector<Point> compute_mask(gray8_image *harris_resp, gray8_image *t2, float
     return res;
 }
 
-bool myfunction (Point p1,Point p2) { return ( p1.val < p2.val); }
+bool myfunction (Point p1,Point p2) { return ( p1.val > p2.val); }
 
 
  std::vector<Point> detect_harris_points(gray8_image *image_gray, int max_keypoints = 30, int min_distance = 25, float threshold = 0.1) {
@@ -322,7 +322,7 @@ void detect_point(PNG_data image_data) {
             std::cout << res->pixels[i * width + j] << " ";
         }
     }*/
-    std::vector<Point> res = detect_harris_points(test, 30, 25, 0.1);
+    std::vector<Point> res = detect_harris_points(test, 2000, 25, 0.1);
 	std::ofstream file;
 	file.open("cpu_keypoints.txt", std::ios::out);
     for (auto i = res.begin(); i != res.end(); i++) {

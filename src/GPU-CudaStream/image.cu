@@ -58,7 +58,7 @@ __host__ gray8_image::gray8_image(int _sx, int _sy) {
     this->sy = _sy;
 
     this->length = sx * sy;
-    auto rc = cudaMallocManaged(&pixels, sizeof(double) * length);//new double[length];
+    auto rc = cudaMalloc(&pixels, sizeof(double) * length);//new double[length];
     if (rc)
         abortError("Fail buffer allocation in gray8_image");
 }

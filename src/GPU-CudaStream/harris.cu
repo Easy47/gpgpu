@@ -230,8 +230,8 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold, 
 	double *harris_vals;
 	Point *coord;
 	int length = harris_resp->length;
-    cudaMallocManaged(&harris_vals, sizeof(double) * length);
-    cudaMallocManaged(&coord, sizeof(Point) * length);
+    cudaMalloc(&harris_vals, sizeof(double) * length);
+    cudaMalloc(&coord, sizeof(Point) * length);
 
     dim3 dimBlockConvol(32, 32);
     dim3 dimGridConvol((harris_resp->sx + dimBlockConvol.x - 1)/dimBlockConvol.x, (harris_resp->sy + dimBlockConvol.y - 1)/dimBlockConvol.y);
@@ -247,14 +247,14 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold, 
 
 	double *sorted_harris_vals;
 	Point *sorted_coord;
-    cudaMallocManaged(&sorted_harris_vals, sizeof(double) * length);
-    cudaMallocManaged(&sorted_coord, sizeof(Point) * length);
+    cudaMalloc(&sorted_harris_vals, sizeof(double) * length);
+    cudaMalloc(&sorted_coord, sizeof(Point) * length);
 
 	void *d_tmp_storage = NULL;
 	size_t tmp_storage_bytes = 0;
 	cub::DeviceRadixSort::SortPairsDescending(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
 
-	cudaMallocManaged(&d_tmp_storage, tmp_storage_bytes);
+	cudaMalloc(&d_tmp_storage, tmp_storage_bytes);
 
 	cub::DeviceRadixSort::SortPairsDescending(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
 

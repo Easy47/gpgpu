@@ -309,7 +309,6 @@ Point *detect_harris_points(gray8_image *image_gray, int &max_keypoints, int min
 }
 
 void detect_point(PNG_data image_data) {
-    std::cout << "Dilate Shared Mem\n";
     gray8_image *test = new gray8_image(image_data.height, image_data.width, image_data.row_pointers);
 
 	int max_keypoints = 2000;

@@ -274,8 +274,8 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold, 
 	double *harris_vals;
 	Point *coord;
 	int length = harris_resp->length;
-    cudaMallocManaged(&harris_vals, sizeof(double) * length);
-    cudaMallocManaged(&coord, sizeof(Point) * length);
+        cudaMallocManaged(&harris_vals, sizeof(double) * length);
+        cudaMallocManaged(&coord, sizeof(Point) * length);
 
     dim3 dimBlockConvol(32, 32);
     dim3 dimGridConvol((harris_resp->sx + dimBlockConvol.x - 1)/dimBlockConvol.x, (harris_resp->sy + dimBlockConvol.y - 1)/dimBlockConvol.y);
@@ -310,8 +310,8 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold, 
 
 	double *sorted_harris_vals;
 	Point *sorted_coord;
-    cudaMallocManaged(&sorted_harris_vals, sizeof(double) * length);
-    cudaMallocManaged(&sorted_coord, sizeof(Point) * length);
+        cudaMallocManaged(&sorted_harris_vals, sizeof(double) * length);
+        cudaMallocManaged(&sorted_coord, sizeof(Point) * length);
 
 	void *d_tmp_storage = NULL;
 	size_t tmp_storage_bytes = 0;

@@ -4,7 +4,7 @@
 #include "../png/png_handler.hh"
 
 
-namespace gpu {
+namespace gpuCudaStream {
 	typedef struct
 	{
 		int x, y;

@@ -10,9 +10,9 @@
 #include <thrust/device_vector.h>
 #include <cub/cub.cuh>
 
-using namespace ImageGpu;
+using namespace ImageGpuCudaStream;
 
-namespace gpu {
+namespace gpuCudaStream {
 __host__ void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image *gy) {
 	
     double gx_tmp[49] = { 
@@ -133,6 +133,10 @@ gray8_image *compute_harris_response(gray8_image *img) {
     kvecConvol<<<dimBlockConvol,dimGridConvol, 0, stream1>>>(imximy->pixels, imximy->sx, imximy->sy, gauss1->pixels, gauss1->sx, Wxy->pixels); 
 
     kvecConvol<<<dimBlockConvol,dimGridConvol, 0, stream2>>>(imy2->pixels, imy2->sx, imy2->sy, gauss2->pixels, gauss2->sx, Wyy->pixels); 
+
+    /*cudaStreamDestroy(stream1);
+    cudaStreamDestroy(stream2);
+    cudaStreamDestroy(stream3);*/
 
     gray8_image *s1 = new gray8_image(imx->sx, imx->sy);
     cudaDeviceSynchronize();
@@ -256,10 +260,8 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold, 
 
 	cudaDeviceSynchronize();
 
-	for (int i = 0; i < dev_count; i++) {
-		std::cout << sorted_harris_vals[i] << std::endl;
-	}
-
+    // std::sort(candidate.begin(), candidate.end(), myfunction);
+	// thrust::sort_by_key(harris_vals, harris_vals + dev_count, coord);
     return sorted_coord;
 }
 

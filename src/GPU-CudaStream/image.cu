@@ -13,7 +13,7 @@
  }                                                                 \
 }
 
-namespace ImageGpu {
+namespace ImageGpuCudaStream {
 
 [[gnu::noinline]]
 void _abortError(const char* msg, const char* fname, int line)

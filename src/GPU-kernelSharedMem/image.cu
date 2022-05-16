@@ -13,7 +13,7 @@
  }                                                                 \
 }
 
-namespace ImageGpuDilateSharedMem {
+namespace ImageGpuKernelSharedMem {
 
 [[gnu::noinline]]
 void _abortError(const char* msg, const char* fname, int line)
@@ -164,6 +164,14 @@ __global__ void kvecDilate(double *img, int img_x, int img_y, double *mask, int 
 
     int tIdX = threadIdx.x;
     int tIdY = threadIdx.y;
+
+    int tIdX = threadIdx.x;
+    int tIdY = threadIdx.y;
+
+    __shared__ double maskShared[625];
+    if (tIdX * 25 + tIdY < 625) {
+        maskShared[tIdX * 25 + tIdY] = mask[tIdX * 25 + tIdY];
+    }
 
     __shared__ double imgShared[1024];
     imgShared[tIdX * 32 + tIdY] = img[x * img_y + y];

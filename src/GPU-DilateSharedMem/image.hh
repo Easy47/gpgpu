@@ -2,7 +2,7 @@
 //TIFO
 #include <png.h>
 
-namespace ImageGpu {
+namespace ImageGpuDilateSharedMem {
 class gray8_image {
 
   public:

@@ -5,7 +5,10 @@
 #include <chrono>
 #include <thread>
 #include "GPU/harris_gpu.hh"
-#include "CPU/harris_cpu.hh"
+
+#include "GPU-CudaStream/harris_gpu.hh"
+#include "GPU-DilateSharedMem/harris_gpu.hh"
+#include "GPU-kernelSharedMem/harris_gpu.hh"
 
 char filename[] = "../img/b001.png";
 PNG_data image_data = read_png_file(filename);
@@ -29,6 +32,31 @@ void BM_Rendering_gpu(benchmark::State& st)
   //st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
 }
 
+void BM_Rendering_gpuCudaStream(benchmark::State& st)
+{
+  for (auto _ : st)
+	gpuCudaStream::detect_point(image_data);
+
+  //st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+}
+
+void BM_Rendering_gpuDilateSharedMem(benchmark::State& st)
+{
+  for (auto _ : st)
+	gpuDilateSharedMem::detect_point(image_data);
+
+  //st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+}
+
+void BM_Rendering_gpuKernelSharedMem(benchmark::State& st)
+{
+  for (auto _ : st)
+	gpuKernelSharedMem::detect_point(image_data);
+
+  //st.counters["frame_rate"] = benchmark::Counter(st.iterations(), benchmark::Counter::kIsRate);
+}
+
+
 BENCHMARK(BM_Rendering_cpu)
 ->Unit(benchmark::kMillisecond)
 ->MinTime(2)
@@ -38,5 +66,21 @@ BENCHMARK(BM_Rendering_gpu)
 ->Unit(benchmark::kMillisecond)
 ->MinTime(2)
 ->UseRealTime();
+
+BENCHMARK(BM_Rendering_gpuCudaStream)
+->Unit(benchmark::kMillisecond)
+->MinTime(2)
+->UseRealTime();
+
+BENCHMARK(BM_Rendering_gpuDilateSharedMem)
+->Unit(benchmark::kMillisecond)
+->MinTime(2)
+->UseRealTime();
+
+BENCHMARK(BM_Rendering_gpuKernelSharedMem)
+->Unit(benchmark::kMillisecond)
+->MinTime(2)
+->UseRealTime();
+
 
 BENCHMARK_MAIN();

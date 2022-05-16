@@ -10,9 +10,9 @@
 #include <thrust/device_vector.h>
 #include <cub/cub.cuh>
 
-using namespace ImageGpu;
+using namespace ImageGpuKernelSharedMem;
 
-namespace gpu {
+namespace gpuKernelSharedMem {
 __host__ void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image *gy) {
 	
     double gx_tmp[49] = { 

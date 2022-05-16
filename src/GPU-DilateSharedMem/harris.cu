@@ -10,9 +10,9 @@
 #include <thrust/device_vector.h>
 #include <cub/cub.cuh>
 
-using namespace ImageGpu;
+using namespace ImageGpuDilateSharedMem;
 
-namespace gpu {
+namespace gpuDilateSharedMem {
 __host__ void gauss_derivative_kernels(int size, int sizey, gray8_image *gx, gray8_image *gy) {
 	
     double gx_tmp[49] = { 
@@ -234,12 +234,23 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold, 
 	point_nb = dev_count;
 
 	double *sorted_harris_vals;
-	int **sorted_coord;
+	Point *sorted_coord;
     cudaMallocManaged(&sorted_harris_vals, sizeof(double) * length);
-    cudaMallocManaged(&sorted_coord, sizeof(int*) * length);
+    cudaMallocManaged(&sorted_coord, sizeof(Point) * length);
 
-	thrust::sort_by_key(harris_vals, harris_vals + dev_count, coord);
-    return coord;
+	void *d_tmp_storage = NULL;
+	size_t tmp_storage_bytes = 0;
+	cub::DeviceRadixSort::SortPairsDescending(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
+
+	cudaMallocManaged(&d_tmp_storage, tmp_storage_bytes);
+
+	cub::DeviceRadixSort::SortPairsDescending(d_tmp_storage, tmp_storage_bytes, harris_vals, sorted_harris_vals, coord, sorted_coord, dev_count);
+
+	cudaDeviceSynchronize();
+
+    // std::sort(candidate.begin(), candidate.end(), myfunction);
+	// thrust::sort_by_key(harris_vals, harris_vals + dev_count, coord);
+    return sorted_coord;
 }
 
 

@@ -2,7 +2,7 @@
 //TIFO
 #include <png.h>
 
-namespace ImageGpuCudaStream {
+namespace ImageGpuKernelSharedMem {
 class gray8_image {
 
   public:

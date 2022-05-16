@@ -4,7 +4,7 @@
 #include "../png/png_handler.hh"
 
 
-namespace gpuDilateSharedMem {
+namespace gpuKernelSharedMem {
 	typedef struct
 	{
 		int x, y;

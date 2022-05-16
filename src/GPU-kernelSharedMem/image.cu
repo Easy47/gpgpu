@@ -189,7 +189,7 @@ __global__ void kvecDilate(double *img, int img_x, int img_y, double *mask, int 
                 continue;
             }
 
-            double m = mask[(i + index) * msk_size + (j + index)];
+            double m = maskShared[(i + index) * msk_size + (j + index)];
             if (m == 0) {
                 continue;
             }

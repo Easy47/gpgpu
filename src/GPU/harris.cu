@@ -323,10 +323,6 @@ Point* compute_mask(gray8_image *harris_resp, gray8_image *t2, float threshold, 
 
 	cudaDeviceSynchronize();
 
-	for (int i = 0; i < dev_count; i++) {
-		std::cout << sorted_harris_vals[i] << std::endl;
-	}
-
     // std::sort(candidate.begin(), candidate.end(), myfunction);
 	// thrust::sort_by_key(harris_vals, harris_vals + dev_count, coord);
     return sorted_coord;

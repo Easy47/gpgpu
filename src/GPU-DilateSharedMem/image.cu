@@ -186,7 +186,7 @@ __global__ void kvecDilate(double *img, int img_x, int img_y, double *mask, int 
 
             double m = mask[(i + index) * msk_size + (j + index)];
             if (m == 0) {
-                continue
+                continue;
             }
             double n;
             if ((x + i) > tileStartX && (x + i) < tileEndX && (y + j) > tileStartY && (y + j) < tileEndY) {

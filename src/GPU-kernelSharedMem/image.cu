@@ -165,9 +165,6 @@ __global__ void kvecDilate(double *img, int img_x, int img_y, double *mask, int 
     int tIdX = threadIdx.x;
     int tIdY = threadIdx.y;
 
-    int tIdX = threadIdx.x;
-    int tIdY = threadIdx.y;
-
     __shared__ double maskShared[625];
     if (tIdX * 25 + tIdY < 625) {
         maskShared[tIdX * 25 + tIdY] = mask[tIdX * 25 + tIdY];
@@ -194,7 +191,7 @@ __global__ void kvecDilate(double *img, int img_x, int img_y, double *mask, int 
 
             double m = mask[(i + index) * msk_size + (j + index)];
             if (m == 0) {
-                continue
+                continue;
             }
             double n;
             if ((x + i) > tileStartX && (x + i) < tileEndX && (y + j) > tileStartY && (y + j) < tileEndY) {

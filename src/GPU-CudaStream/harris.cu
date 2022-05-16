@@ -71,7 +71,7 @@ void gauss_derivatives(gray8_image *img, int size, gray8_image *imx, gray8_image
     gauss_derivative_kernels(size, size, gx, gy);
 
 
-    dim3 dimBlock(32, 32);
+    dim3 dimBlockConvol(32, 32);
     dim3 dimGridConvol((imx->sx + dimBlockConvol.x - 1)/dimBlockConvol.x, (imx->sy + dimBlockConvol.y - 1)/dimBlockConvol.y);
 
     

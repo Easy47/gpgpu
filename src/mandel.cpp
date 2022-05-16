@@ -10,7 +10,7 @@
 #include "png/png_handler.hh"
 
 #include "GPU-CudaStream/harris_gpu.hh"
-#include "GPU-DilateSharedMEM/harris_gpu.hh"
+#include "GPU-DilateSharedMem/harris_gpu.hh"
 #include "GPU-kernelSharedMem/harris_gpu.hh"
 
 // Usage: ./mandel
